@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
 	RC rc;
 
 	if(argc!=4){
-		printf("Error, you must use $./main datasetName numAttributes numTuples");
+		printf("Error, you must use $./main numAttributes numTuples datasetName");
 		return -1;
 	}
 
