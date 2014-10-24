@@ -3,8 +3,10 @@ CFLAGS = -Wall -Wextra -Iutil -Lutil
 
 all: main 
 
-main: main.c H.c util/libbitarr.a
-	$(CC) $(CFLAGS) -Wc++-compat -o main main.c H.c -lbitarr
+H.o: H.h
+
+main: main.c util/libbitarr.a
+	$(CC) $(CFLAGS) -Wc++-compat -o main main.c -lbitarr
 
 test: main 
 	./main

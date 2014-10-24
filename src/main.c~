@@ -12,6 +12,11 @@ typedef int RC; //for errors
 /**
  * methods
  **/
+RC findRefutations(char *** relation, H *matrixH, unsigned int Y);
+RC readDataSet(char *** relation, char nameRelation[],
+		unsigned int numAttributes, unsigned int numTuples, char* delimiter);
+void printRelation(char ***relation, unsigned int numAttributes,
+		unsigned int numTuples);
 
 //method to find refutations for one determined attribute
 RC findRefutations(char *** relation, H *matrixH, int Y){
