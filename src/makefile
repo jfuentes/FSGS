@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -Iutil -Lutil
 all: main 
 
 main: main.c H.c util/libbitarr.a
-	$(CC) $(CFLAGS) -Wc++-compat -o main main.c H.c -lbitarr
+	$(CC) $(CFLAGS) -Wc++-compat -o main main.c H.c -lbitarr -lpthread
 
 test: main 
 	./main
