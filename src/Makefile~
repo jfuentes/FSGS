@@ -1,22 +1,15 @@
-ifndef CC
-	CC = gcc
-endif
 
-CFLAGS = -Wall -Wextra -Ilib -Llib
+CFLAGS = -Wall -Wextra -Iutil -Lutil
 
-all: example_c
+all: main 
 
-example_cpp: example.cpp util/libbitarr.a
-	$(CXX) $(CFLAGS) -o example_cpp example.cpp -lbitarr
+main: main.c H.c util/libbitarr.a
+	$(CC) $(CFLAGS) -Wc++-compat -o main main.c H.c -lbitarr
 
-example_c: example.c util/libbitarr.a
-	$(CC) $(CFLAGS) -Wc++-compat -o example_c example.c -lbitarr
-
-test: example_c example_cpp
-	./example_c
-	./example_cpp
+test: main 
+	./main
 
 clean:
-	rm -rf example_cpp example_c *.o *.dSYM *.greg
+	rm -rf main H *.o *.dSYM *.greg
 
 .PHONY: all clean test
