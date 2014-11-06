@@ -1,7 +1,8 @@
 #include "util/bit_array.h"
 
 #define INITIAL_SIZE_H 100
-
+#define SEQUENTIAL_ALGORITHM 0
+#define MULTICORE_ALGORITHM 1
 
 typedef struct{
 	unsigned int numAttributes;
@@ -20,6 +21,8 @@ typedef struct {
   	unsigned int to;
   	BIT_ARRAY * refutation;
 } argumentsH;
+
+int type_algorithm;
 
 H* createH(unsigned int numAttributes, unsigned int Y);
 

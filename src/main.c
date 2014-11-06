@@ -13,43 +13,41 @@ typedef int RC; //for errors
 /**
  * methods
  **/
-RC * checkRefutationInH( void *args);
-RC findRefutations(char *** relation, H *matrixH, int Y, int numAttributes, int numTuples);
 
-//method to find refutations for one determined attribute
-RC findRefutations(char *** relation, H *matrixH, int Y, int numAttributes, int numTuples){
+RC findRefutations(unsigned int ** relation, H *matrixH, int Y, int numAttributes, int numTuples);
+RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to, BIT_ARRAY * refutation);
+RC * checkRefutationInHMulti( argumentsH *argsThread);
+RC findRefutationsMulti(unsigned int ** relation, H *matrixH, int Y, int numAttributes, int numTuples);
 
-	int i,j, X,rc;
+/**
+* sequential method to find refutations for one determined attribute
+**/
+RC findRefutations(unsigned int ** relation, H *matrixH, int Y, int numAttributes, int numTuples){
+
+	int i,j, X;
 	//cuadratic search of refutations
 	for(i=0; i< numTuples; i++){
 		for(j=i+1; j<numTuples; j++){
 
 
-			if(strcmp(relation[i][Y], relation[j][Y])!=0){
+			if(relation[i][Y]!=relation[j][Y]){
 				//new refutation found
 				BIT_ARRAY *refutation = bit_array_create(numAttributes);
 				for(X=numAttributes-1;X>=0;X--){
-                    			if(strcmp(relation[i][X],relation[j][X])==0){
-                        			bit_array_set_bit(refutation, X);
-                    			}
-                		}
-                		if(bit_array_num_bits_set(refutation)==0)
-                			continue;
+													if(relation[i][X]==relation[j][X]){
+															bit_array_set_bit(refutation, X);
+													}
+										}
+										if(bit_array_num_bits_set(refutation)==0)
+											continue;
 				printf("refutation found: [%d][%d] ",i,j);
 				bit_array_printf(refutation);
 				printf("\n");
 
-				//call multi-threading function
-				argumentsH *args = (argumentsH *) malloc(sizeof(argumentsH));
-        			args->matrixH=matrixH;
-        			args->from=0;
-        			args->to=matrixH->numRefutations;
-        			args->refutation=refutation;
-				pthread_t thread;
-      				pthread_create(&thread, NULL, checkRefutationInH, (void *)args);
-      				pthread_join(thread, NULL);
-      				//show H
-      				printH(matrixH);
+
+				checkRefutatioInH(matrixH, 0, matrixH->numRefutations, refutation);
+				//show H
+				printH(matrixH);
 
 
 
@@ -63,7 +61,112 @@ RC findRefutations(char *** relation, H *matrixH, int Y, int numAttributes, int 
 	return 0;
 }
 
-RC * checkRefutationInH( void *argsThread) {
+/**
+* senquential method to check maximality of a refutation vs H
+**/
+RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to, BIT_ARRAY * refutation) {
+
+	unsigned int i;
+
+	printf("thread dealing with H\n ");
+	if(to==0) // there is no refutations to compare with, add it
+		addHi(matrixH,refutation );
+	else{
+		for(i=from; i<to; i++){
+			if(matrixH->existRef[i]==0)
+				continue;
+			printf("checking...\n ");
+			BIT_ARRAY * t=bit_array_create(matrixH->numAttributes);
+			BIT_ARRAY * result=bit_array_create(matrixH->numAttributes);
+
+			// t= X and Xi
+			bit_array_and(t, refutation, matrixH->matrix[i]);
+
+			//t XOR X
+			bit_array_xor(result, t, refutation);
+
+			if(bit_array_num_bits_set(result)==0){ // if t XOR X = 0
+				// X is subset of Xi
+				// get away X
+				printf("----> X subset of Xi\n ");
+				return 0;
+			}else{
+				//t XOR X
+				bit_array_xor(result, t, matrixH->matrix[i]);
+				if(bit_array_num_bits_set(result)==0){ // if t XOR Xi = 0
+					// Xi is subset of X
+					// remove all of Xi which are subset of X
+					printf("----> Xi subset of X\n ");
+					matrixH->existRef[i]=0;
+					bit_array_free(matrixH->matrix[i]);
+				}
+
+			}
+
+		}
+		addHi(matrixH,refutation );
+	}
+	printf("\n ");
+
+	//compact array of Hs
+	return 0;
+
+}
+
+
+//multi-core method to find refutations for one determined attribute
+RC findRefutationsMulti(unsigned int ** relation, H *matrixH, int Y, int numAttributes, int numTuples){
+
+	int i,j, X;
+	//cuadratic search of refutations
+	for(i=0; i< numTuples; i++){
+		for(j=i+1; j<numTuples; j++){
+
+
+			if(relation[i][Y]!=relation[j][Y]){
+				//new refutation found
+				BIT_ARRAY *refutation = bit_array_create(numAttributes);
+				for(X=numAttributes-1;X>=0;X--){
+													if(relation[i][X]==relation[j][X]){
+															bit_array_set_bit(refutation, X);
+													}
+										}
+										if(bit_array_num_bits_set(refutation)==0)
+											continue;
+				printf("refutation found: [%d][%d] ",i,j);
+				bit_array_printf(refutation);
+				printf("\n");
+
+				//call multi-threading function
+				//PENDIENT..
+				// the idea is to split H and define 'from' and 'to' indexes for each thread
+				argumentsH *args = (argumentsH *) malloc(sizeof(argumentsH));
+							args->matrixH=matrixH;
+							args->from=0;
+							args->to=matrixH->numRefutations;
+							args->refutation=refutation;
+				pthread_t thread;
+							pthread_create(&thread, NULL, checkRefutationInHMulti, (void *)args);
+							pthread_join(thread, NULL);
+							//show H
+							printH(matrixH);
+
+
+
+			}
+
+
+		}
+
+	}
+
+	return 0;
+}
+
+/**
+* multi-core method to check maximality of a refutation vs H
+**/
+RC * checkRefutationInHMulti( argumentsH *argsThread) {
     	argumentsH *args = (argumentsH *) argsThread;
 	unsigned int i;
 
@@ -112,7 +215,7 @@ RC * checkRefutationInH( void *argsThread) {
 
 }
 
-RC readDataSet(char *** relation, char nameRelation[],
+RC readDataSet(unsigned int ** relation, char nameRelation[],
 		unsigned int numAttributes, unsigned int numTuples, char * delimiter) {
 	char fileName[100];
 	sprintf(fileName, "../datasets/%s", nameRelation);
@@ -130,10 +233,10 @@ RC readDataSet(char *** relation, char nameRelation[],
 	col = 0, row = 0;
 	while (row < numTuples && fgets(line, sizeof(line), file)) {
 		char * ds = strdup(line);
-		relation[row][col] = strtok(ds, delimiter);
+		relation[row][col] = atoi(strtok(ds, delimiter));
 		while (col < numAttributes && relation[row][col]) {
 			col++;
-			relation[row][col] = strtok(NULL, delimiter);
+			relation[row][col] = atoi(strtok(NULL, delimiter));
 		}
 		col = 0;
 		row++;
@@ -144,13 +247,13 @@ RC readDataSet(char *** relation, char nameRelation[],
 
 }
 
-void printRelation(char ***relation, unsigned int numAttributes,
+void printRelation(unsigned int **relation, unsigned int numAttributes,
 		unsigned int numTuples) {
 	unsigned int row, col;
 	printf("Dataset:\n");
 	for (row = 0; row < numTuples; row++) {
 		for (col = 0; col < numAttributes; col++)
-			printf("%s ", relation[row][col]);
+			printf("%d ", relation[row][col]);
 		printf("\n");
 	}
 }
@@ -166,23 +269,22 @@ int main(int argc, char* argv[]) {
 
 	if (argc != 4) {
 		printf(
-				"Error, you must use $./main numAttributes numTuples datasetName");
+				"Error, you must use $./main numAttributes numTuples datasetName typeAlgorithm");
 		return -1;
 	}
 
 	numAttributes = atoi(argv[1]);
 	numTuples = atoi(argv[2]);
 	char *nameRelation = argv[3];
+	type_algorithm=atoi(argv[4]);
 	printf("Dataset: %s", nameRelation);
 	printf(" size=%d x %d", numTuples, numAttributes);
 
 	//request enough space for the dataset
-	char *** relation = (char ***) malloc(sizeof(char**) * numTuples);
-	unsigned int i, j;
+	unsigned int ** relation = (unsigned int **) malloc(sizeof(unsigned int*) * numTuples);
+	unsigned int i;
 	for (i = 0; i < numTuples; i++) {
-		relation[i] = (char **) malloc(sizeof(char *) * numAttributes);
-		for (j = 0; j < numAttributes; j++)
-			relation[i][j] = (char *) malloc(sizeof(char) * 30);
+		relation[i] = (unsigned int *) malloc(sizeof(unsigned int *) * numAttributes);
 	}
 
 	rc = readDataSet(relation, nameRelation, numAttributes, numTuples,
@@ -197,12 +299,19 @@ int main(int argc, char* argv[]) {
 
 	//for each attribute, fin its refutations and build H
 	int k=0;
-	for(k=numAttributes-1; k>=0 ; k--){
-		H * matrixH = createH(numAttributes, k);
-		rc = findRefutations(relation, matrixH, k, numAttributes, numTuples);
-
-
+	if(type_algorithm==SEQUENTIAL_ALGORITHM){
+		for(k=numAttributes-1; k>=0 ; k--){
+			H * matrixH = createH(numAttributes, k);
+			rc = findRefutations(relation, matrixH, k, numAttributes, numTuples);
+		}
+	}else{
+		for(k=numAttributes-1; k>=0 ; k--){
+			H * matrixH = createH(numAttributes, k);
+			rc = findRefutationsMulti(relation, matrixH, k, numAttributes, numTuples);
+		}
 	}
+
+
 
 
 	return rc;
