@@ -39,7 +39,9 @@ void printH(H *h){
 	unsigned int i;
 	printf("Matrix H for Y=%d\n",h->Y);
 	for(i=0; i<h->numRefutations; i++){
-		bit_array_printf(h->matrix[i]);
-		printf("\n");
+		if(h->existRef[i]){
+			bit_array_printf(h->matrix[i]);
+			printf("\n");
+		}
 	}
 }

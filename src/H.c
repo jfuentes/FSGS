@@ -37,7 +37,7 @@ void destroyH(H *h){
 
 void printH(H *h){
 	unsigned int i;
-	printf("Matrix H for Y=%d\n",h->Y);
+	printf("\nMatrix H for Y=%d\n",h->Y);
 	for(i=0; i<h->numRefutations; i++){
 		if(h->existRef[i]){
 			bit_array_printf(h->matrix[i]);

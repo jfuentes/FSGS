@@ -1,0 +1,18 @@
+This program generates an instance of relation to produce the worst case in finding maximal refutations.
+
+Call this program using the following parameters:
+$ python nameProgram numberOfAttributes fileName
+
+For example
+$ python main.py 4 test.data
+
+Will produce a CSV file formate like this:
+1,1,1,1
+1,1,2,2
+1,2,1,3
+1,3,3,1
+2,1,1,4
+3,1,4,1
+4,4,1,1
+
+

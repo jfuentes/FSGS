@@ -1,0 +1,6 @@
+Python program
+
+This program generates an instance of relation to produce the worst case in finding maximal refutations.
+
+Given an instance of relation r of R and a set of attributes A. A refutation is found if given two tuples
+(rows) u and v, u[Y]!=v[Y] and u[B]!=v[B] where Y is in A and B is a subset of A\Y.
