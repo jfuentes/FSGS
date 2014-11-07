@@ -9,11 +9,15 @@ typedef struct{
 	unsigned int numRefutations;
 	unsigned int size;
 	unsigned int Y;
-	BIT_ARRAY * matrix[INITIAL_SIZE_H];
-
-	unsigned int existRef[INITIAL_SIZE_H]; //1 indicates there is a refutation, 0 othercase
-
+	BIT_ARRAY ** matrix;
+	struct node *deletedPositions; //simple list to store deleted position for its reutilization
+	unsigned int firstAvailablePosition;
 }H;
+
+struct node{
+	int position;
+	struct node * next;
+};
 
 typedef struct {
   	H *matrixH;
@@ -23,10 +27,13 @@ typedef struct {
 } argumentsH;
 
 int type_algorithm;
+typedef int RC; //for errors
 
 H* createH(unsigned int numAttributes, unsigned int Y);
 
-void addHi(H *h, BIT_ARRAY * newRef);
+RC addHi(H *h, BIT_ARRAY * newRef);
+
+void removeHi(H *h, unsigned int i);
 
 void destroyH(H *h);
 

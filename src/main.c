@@ -5,10 +5,11 @@
 #include <assert.h>
 #include "H.h"
 
-typedef int RC; //for errors
+
 /**
  * Typical errors:
  * -10 File not found
+ * -11 out of memory
  **/
 
 /**
@@ -69,14 +70,15 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,
  **/
 RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
 		BIT_ARRAY * refutation) {
-
+	RC rc=0;
 	unsigned int i;
 
-	if (to == 0) // there is no refutations to compare with, add it
-		addHi(matrixH, refutation);
-	else {
+	if (to == 0){ // there is no refutations to compare with, add it
+		if((rc=addHi(matrixH, refutation))!=0)
+			return rc;
+	}else {
 		for (i = from; i < to; i++) {
-			if (matrixH->existRef[i] == 0)
+			if (matrixH->matrix[i] == NULL)
 				continue;
 			BIT_ARRAY * t = bit_array_create(matrixH->numAttributes);
 			BIT_ARRAY * result = bit_array_create(matrixH->numAttributes);
@@ -97,9 +99,7 @@ RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
 				if (bit_array_num_bits_set(result) == 0) { // if t XOR Xi == 0
 					// Xi is subset of X
 					// remove all of Xi which are subset of X
-					matrixH->existRef[i] = 0;
-					matrixH->numRefutations--;
-					bit_array_free(matrixH->matrix[i]);
+					removeHi(matrixH, i);
 				}
 
 			}
@@ -109,7 +109,7 @@ RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
 	}
 
 	//Idea: compact array of Hs
-	return 0;
+	return rc;
 
 }
 
@@ -167,7 +167,7 @@ void *checkRefutationInHMulti(void *argsThread) {
 		addHi(args->matrixH, args->refutation);
 	else {
 		for (i = args->from; i < args->to; i++) {
-			if (args->matrixH->existRef[i] == 0)
+			if (args->matrixH->matrix[i] == NULL)
 				continue;
 			BIT_ARRAY * t = bit_array_create(args->matrixH->numAttributes);
 			BIT_ARRAY * result = bit_array_create(args->matrixH->numAttributes);
@@ -188,7 +188,6 @@ void *checkRefutationInHMulti(void *argsThread) {
 				if (bit_array_num_bits_set(result) == 0) { // if t XOR Xi = 0
 					// Xi is subset of X
 					// remove all of Xi which are subset of X
-					args->matrixH->existRef[i] = 0;
 					bit_array_free(args->matrixH->matrix[i]);
 				}
 
@@ -206,7 +205,7 @@ RC readDataSet(int ** relation, char nameRelation[], unsigned int numAttributes,
 		unsigned int numTuples, char * delimiter) {
 	char fileName[100];
 	sprintf(fileName, "../datasets/%s", nameRelation);
-	char line[numAttributes * 4];
+	char line[numAttributes * 6];
 	unsigned int col = 0, row = 0;
 
 	printf("\nOpening %s", fileName);
@@ -295,6 +294,7 @@ int main(int argc, char* argv[]) {
 			H * matrixH = createH(numAttributes, k);
 			rc = findRefutations(relation, matrixH, k, numAttributes,
 					numTuples);
+			destroyH(matrixH);
 		}
 	} else {
 		for (k = numAttributes - 1; k >= 0; k--) {
