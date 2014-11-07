@@ -1,6 +1,25 @@
-Python program
+#Problem Statement
+Let $R$ be a relation with a set $A$ of attributes and let $r$ be an instance of $R$. 
+A {\em functional dependency} (FD) is an expression of the form $X \to Y$, where
+$X \subseteq A$ and $Y \in A$. $X$ is called the {\em determinant set} and $Y$ is called
+the {\em dependent attribute}. The dependency is {\em valid} in the instance $r$ if and
+only if for every pair of rows (tuples) $t, u \in r$, whenever $t[B]=u[B]$ for all
+$B \in X$, it is also the case that $t[Y]=u[Y]$. A FD $X \to Y$ is called {\em trivial}
+if $Y\in X$. Our problem can be formally stated as follows: \textit{given a relation
+$R$ and an instance $r$ of $R$, find all non-trivial FDs that are valid in $r$}. 
 
-This program generates an instance of relation to produce the worst case in finding maximal refutations.
 
-Given an instance of relation r of R and a set of attributes A. A refutation is found if given two tuples
-(rows) u and v, u[Y]!=v[Y] and u[B]!=v[B] where Y is in A and B is a subset of A\Y.
+So, given two FDs $X\to B$ and $Y\to B$ as in the proposition, the latter can be
+considered redundant, in the sense that if the former has been found the latter does
+no longer need to be considered, since it follows from the former. This consideration
+leads us to give the following
+\begin{definition}
+Given a relation instance $r$, a FD $X\to B$ that is valid in $r$ is said to be {\em 
+minimal} if no other FD $Y\to B$ is valid in $r$ with $Y$ a proper subset of $X$.
+\end{definition}
+
+So the practical formulation of our problem is as follows: \textit{given a relation
+$R$ and an instance $r$ of $R$, find all non-trivial, minimal FDs that are valid in $r$}.
+
+#Method proposed
+We can prove that this 
