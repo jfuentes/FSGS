@@ -40,12 +40,14 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,
 				//new refutation found
 				BIT_ARRAY *refutation = bit_array_create(numAttributes);
 				for (X = numAttributes - 1; X >= 0; X--) {
-					if (relation[i][X] == relation[j][X]) {
+					if (Y!=X &&relation[i][X] == relation[j][X]) {
 						bit_array_set_bit(refutation, X);
 					}
 				}
-				if (bit_array_num_bits_set(refutation) == 0)
-					continue;
+				if (bit_array_num_bits_set(refutation) == 0){
+					free(refutation); // it is not necessary to call destroy, because the array is empty
+                    continue;
+                }
 				//printf("refutation found: [%d][%d] ",i,j);
 				//bit_array_printf(refutation);
 				//printf("\n");
@@ -103,6 +105,8 @@ RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
 				}
 
 			}
+            bit_array_free(t);
+            bit_array_free(result);
 
 		}
 		addHi(matrixH, refutation);
@@ -232,7 +236,6 @@ RC readDataSet(int ** relation, char nameRelation[], unsigned int numAttributes,
 
 	}
 	fclose(file);
-
 	return 0;
 
 }

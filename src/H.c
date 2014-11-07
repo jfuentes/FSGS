@@ -28,13 +28,8 @@ RC addHi(H *h, BIT_ARRAY * newRef){
 			h->matrix=(BIT_ARRAY **) realloc(h->matrix, sizeof(BIT_ARRAY)*h->size*2);
 			if(h->matrix==NULL)
 				return -11; // out of memory
-			/*BIT_ARRAY * matrixAux[h->size*2];
-			for(i=0; i<h->size; i++){
-				matrixAux[i]=h->matrix[i];
-			}
-			h->matrix=matrixAux;*/
-			//free(matrixAux);
 			h->size=h->size*2; //update the matrix size
+            printf("\nMatrix H was incresed to %d",h->size);
 		}
 		pos=h->firstAvailablePosition;
 		h->firstAvailablePosition++;
@@ -63,6 +58,8 @@ void destroyH(H *h){
 	unsigned int i;
 	for(i=0; i<h->numRefutations; i++)
 		bit_array_free(h->matrix[i]);
+    free(h->deletedPositions);
+    free(h->matrix);
 	free(h);
 
 }

@@ -1,5 +1,5 @@
 
-CFLAGS = -Wall -Wextra -Iutil -Lutil
+CFLAGS = -g -Wall -Wextra -Iutil -Lutil
 
 all: main 
 
