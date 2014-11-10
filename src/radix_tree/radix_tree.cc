@@ -7,31 +7,34 @@ typedef bitset<K> k_t;
 int main(void) {
   auto trie = FastTrieNode<uint64_t, 4, K>();
 
-  cout << k_t (trie.getQueryStorageType(k_t(14), 0, true)) << endl;
-  cout << k_t (trie.getQueryStorageType(k_t(14), 1, true)) << endl;
+  cout << k_t (trie.getQueryStorageType<true>(k_t(14), 0)) << endl;
+  cout << k_t (trie.getQueryStorageType<true>(k_t(14), 1)) << endl;
 
-  cout << k_t (trie.getQueryStorageType(k_t(10), 3, true)) << endl;
+  cout << k_t (trie.getQueryStorageType<true>(k_t(10), 3)) << endl;
 //  cout << k_t (trie.getQueryStorageType(k_t(14), 14)) << endl;
-  cout << __builtin_popcount(14) << endl;
 
   cout << trie.containsSubset(k_t(1), 0) << endl; 
 
   cout << "Inserting elems" << endl;
 
-  cout << trie.nr_elems() << endl;
+  cout << trie.elems.nr_elems() << endl;
 
-  trie.insertSubElem(k_t(13), 0);
-  cout << trie.nr_elems() << endl;
+  trie.InsertElem(k_t(13), 0);
+  cout << trie.elems.nr_elems() << endl;
  
- trie.insertSubElem(k_t(1), 0);
-  cout << trie.nr_elems() << endl;
-  trie.insertSubElem(k_t(2), 0);
-  cout << trie.nr_elems() << endl;
+  trie.InsertElem(k_t(1), 0);
+  cout << trie.elems.nr_elems() << endl;
+  trie.InsertElem(k_t(2), 0);
+  cout << trie.elems.nr_elems() << endl;
 
-  trie.insertSubElem(k_t(1), 0);
-  cout << trie.nr_elems() << endl;
-  trie.insertSubElem(k_t(2), 0);
-  cout << trie.nr_elems() << endl;
+  trie.InsertElem(k_t(1), 0);
+  cout << trie.elems.nr_elems() << endl;
+  trie.InsertElem(k_t(2), 0);
+  cout << trie.elems.nr_elems() << endl;
+
+  trie.InsertElem(k_t(20), 0);
+  cout << trie.elems.nr_elems() << endl;
+
 
   cout << trie << endl;
 

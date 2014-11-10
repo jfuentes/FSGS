@@ -16,8 +16,8 @@ typedef uint8_t k_size_t;
 
 using namespace std;
 
-template <class storageType, k_size_t B, k_size_t K> class FastTrieNode {
 
+template <class storageType, k_size_t B, k_size_t K> struct BlocksVector {
   static_assert(K >= B, "K, the number of bits in tree, must be larger than B, the number of bits in node.");
   static_assert(K % B == 0, "K must be a multiple of B.");
   static_assert(B <= sizeof(storageType)*8, "Number of bits in storage type must have at least B.");
@@ -26,17 +26,14 @@ template <class storageType, k_size_t B, k_size_t K> class FastTrieNode {
 
   vector<storageType> elem_blocks;
   uint_fast8_t elems_size_residual = 0;
-  
-  public:
 
   size_t nr_elems() const {
-    return (size_t) max( (int)elem_blocks.size()-1, 0) * nr_elems_per_block + elems_size_residual;
-  } 
-  void insertSubElem(const bitset<K> q, const k_size_t k_offset) {
+    return (elems_size_residual == 0)? elem_blocks.size() * nr_elems_per_block: (elem_blocks.size() - 1) * nr_elems_per_block + elems_size_residual;
+  }
+
+ void InsertElem(storageType q_st) {
     // TODO: Insert sorted to improve performance (at least ordered blocks)
 
-    auto q_st = getQueryStorageType(q, k_offset, false);
- 
     if (elems_size_residual > 0) {
 
       assert(elem_blocks.size() > 0);
@@ -50,17 +47,39 @@ template <class storageType, k_size_t B, k_size_t K> class FastTrieNode {
     elems_size_residual = (elems_size_residual + 1) & (B-1);
   }
 
-  bool const containsSubset(const bitset<K> q, const k_size_t k_offset) const {
+  void DeleteElems(vector<uint_fast8_t> & elems) {
+  //  sort(elems.begin(), elems.end());
+  }
+};
 
-    auto q_st = getQueryStorageType(q, k_offset, true);
+template <class storageType, k_size_t B, k_size_t K> struct FastTrieNode {
 
-    for (const auto & block : elem_blocks) {
+  BlocksVector<storageType, B, K> elems;
+
+  void InsertElem(const bitset<K> & q, const k_size_t k_offset) {
+    // TODO: Insert sorted to improve performance (at least ordered blocks)
+
+    auto q_st = getQueryStorageType<false>(q, k_offset);
+    elems.InsertElem(q_st);
+  }
+
+  void deleteElems(vector<uint_fast8_t> & elems) {
+  //  sort(elems.begin(), elems.end());
+  }
+
+  enum FindType{ subset, superset, equal};
+
+  template <bool find_first, FindType find_type> bool const FindElems(const bitset<K> & q, const k_size_t k_offset) const {
+
+    auto q_st = getQueryStorageType<true>(q, k_offset);
+
+    for (const auto & block : elems.elem_blocks) {
       const auto q_and_b = q_st & block;
       cout << bitset<K>(q_and_b) << endl;
 
       storageType mask_q_one = B - 1;
 
-      for (uint_fast8_t i = 0; i < nr_elems_per_block; ++i) {
+      for (uint_fast8_t i = 0; i < elems.nr_elems_per_block; ++i) {
 
         if ((q_and_b & mask_q_one) == (q_st & mask_q_one)) {
           return true;
@@ -72,10 +91,13 @@ template <class storageType, k_size_t B, k_size_t K> class FastTrieNode {
     return false;
   };
 
-  storageType getQueryStorageType(const bitset<K> q, const k_size_t k_offset, const bool fill_storage_type) const {
+  bool const containsSubset(const bitset<K> & q, const k_size_t k_offset) const {
+    return FindElems<true, FastTrieNode::FindType::subset>(q, k_offset);
+  }
+
+  template <bool fill_storage_type> storageType getQueryStorageType (const bitset<K> & q, const k_size_t k_offset) const {
     //K must be larger or equal that k_offset.
      assert(k_offset + B <= K);
-
 
     // TODO: This can be done more efficiently
     storageType q_st = 0;
@@ -94,13 +116,13 @@ template <class storageType, k_size_t B, k_size_t K> class FastTrieNode {
     return q_st;
   };
 
-  friend ostream& operator<< (ostream & out, const FastTrieNode node) {
+  friend ostream& operator<< (ostream & out, const FastTrieNode & node) {
 
     size_t iter_elems = 0;
-    auto tot_elems = node.nr_elems();
+    auto tot_elems = node.elems.nr_elems();
 
-    for( auto b : node.elem_blocks) {
-      for(uint_fast8_t i = 0; i < node.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
+    for( auto b : node.elems.elem_blocks) {
+      for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
         out << iter_elems << ": \t" << bitset<B>(b) << endl;
         b >>= B;
       }
