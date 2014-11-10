@@ -69,20 +69,38 @@ template <class storageType, k_size_t B, k_size_t K> struct FastTrieNode {
 
   enum FindType{ subset, superset, equal};
 
-  template <bool find_first, FindType find_type> bool const FindElems(const bitset<K> & q, const k_size_t k_offset) const {
+  template <bool stop_first, FindType find_type> bool const FindElems(
+      const storageType q_st, BlocksVector<storageType, B, K> * matches) const {
 
-    auto q_st = getQueryStorageType<true>(q, k_offset);
+    // calling stop_first and do not provide matches makes no sense
+    assert(stop_first ||  matches != nullptr);
 
     for (const auto & block : elems.elem_blocks) {
       const auto q_and_b = q_st & block;
-      cout << bitset<K>(q_and_b) << endl;
 
-      storageType mask_q_one = B - 1;
+#ifdef DEBUG
+      cout << "Block: " << bitset<K>(block) << " \t q_and_b: " <<bitset<K>(q_and_b) << endl;
+#endif
+
+      // Mask with B Least Significant Bits set
+      storageType mask_q_one = (1 << (B)) -1;
 
       for (uint_fast8_t i = 0; i < elems.nr_elems_per_block; ++i) {
+        bool found = false;
 
-        if ((q_and_b & mask_q_one) == (q_st & mask_q_one)) {
-          return true;
+        switch(find_type) {
+          case FindType::superset: found = (q_and_b & mask_q_one) == (q_st & mask_q_one);  break;
+          case FindType::subset  : found = (q_and_b & mask_q_one) == (block & mask_q_one); break;
+          case FindType::equal   : found = (q_st & mask_q_one)    == (block & mask_q_one); break;
+        }
+        if (found) {
+#ifdef DEBUG
+      cout << "Found. find_type: " << find_type << " query: " << bitset<K>(q_st) << " mask:" << bitset<K>(mask_q_one)  << " offset: " << (int)i << endl;
+#endif 
+         if( matches != nullptr)
+            matches->InsertElem(q_st);
+          if (stop_first)
+            return true;            
         }
         mask_q_one <<= B;
       }
@@ -92,7 +110,13 @@ template <class storageType, k_size_t B, k_size_t K> struct FastTrieNode {
   };
 
   bool const containsSubset(const bitset<K> & q, const k_size_t k_offset) const {
-    return FindElems<true, FastTrieNode::FindType::subset>(q, k_offset);
+    auto q_st = getQueryStorageType<true>(q, k_offset);
+    return FindElems<true, FindType::subset>(q_st, NULL);
+  }
+
+  bool const containsSuperset(const bitset<K> & q, const k_size_t k_offset) const {
+    auto q_st = getQueryStorageType<true>(q, k_offset);
+    return FindElems<true, FindType::superset>(q_st, NULL);
   }
 
   template <bool fill_storage_type> storageType getQueryStorageType (const bitset<K> & q, const k_size_t k_offset) const {
