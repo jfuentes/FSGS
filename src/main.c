@@ -16,20 +16,15 @@
  * methods
  **/
 
-RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,
-		int numTuples);
-RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
-		BIT_ARRAY * refutation);
+RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int numTuples);
+RC checkRefutationInH(H *matrixH, word_t refutation);
 void * checkRefutationInHMulti(void *argsThread);
-RC findRefutationsMulti(int ** relation, H *matrixH, int Y, int numAttributes,
-		int numTuples);
-void printRelation(int **relation, unsigned int numAttributes,
-		unsigned int numTuples);
+RC findRefutationsMulti(int ** relation, H *matrixH, int Y, int numAttributes, int numTuples);
+void printRelation(int **relation, unsigned int numAttributes, unsigned int numTuples);
 /**
  * sequential method to find refutations for one determined attribute
  **/
-RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,
-		int numTuples) {
+RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int numTuples) {
 
 	int i, j, X;
 	//cuadratic search of refutations
@@ -38,22 +33,24 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,
 
 			if (relation[i][Y] != relation[j][Y]) {
 				//new refutation found
-				BIT_ARRAY *refutation = bit_array_create(numAttributes);
+				word_t refutation = 0x00000000;
+				word_t mask = 1;
 				for (X = numAttributes - 1; X >= 0; X--) {
 					if (Y!=X &&relation[i][X] == relation[j][X]) {
-						bit_array_set_bit(refutation, X);
+						mask = 1;
+						mask<<=X;
+						refutation|=mask;
 					}
 				}
-				if (bit_array_num_bits_set(refutation) == 0){
-					free(refutation); // it is not necessary to call destroy, because the array is empty
-                    continue;
-                }
+				if (!refutation){
+					continue;
+        		}
 				//printf("refutation found: [%d][%d] ",i,j);
-				//bit_array_printf(refutation);
+				//printbits(refutation, numAttributes);
+				//printf("  %d",refutation);
 				//printf("\n");
 
-				checkRefutationInH(matrixH, 0, matrixH->numRefutations,
-						refutation);
+				checkRefutationInH(matrixH, refutation);
 
 			}
 
@@ -70,46 +67,42 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,
 /**
  * senquential method to check maximality of a refutation vs H
  **/
-RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
-		BIT_ARRAY * refutation) {
+RC checkRefutationInH(H *matrixH, word_t X) {
 	RC rc=0;
-	unsigned int i;
+	unsigned int i, j=0;
 
-	if (to == 0){ // there is no refutations to compare with, add it
-		if((rc=addHi(matrixH, refutation))!=0)
+	if (matrixH->numRefutations == 0){ // there is no refutations to compare with, add it
+		if((rc=addHi(matrixH, X))!=0)
 			return rc;
 	}else {
-		for (i = from; i < to; i++) {
-			if (matrixH->matrix[i] == NULL)
+		word_t t, result;
+		for (i = 0; i < matrixH->size && j<matrixH->numRefutations; i++) {
+			if (!matrixH->matrix[i])
 				continue;
-			BIT_ARRAY * t = bit_array_create(matrixH->numAttributes);
-			BIT_ARRAY * result = bit_array_create(matrixH->numAttributes);
 
 			// t= X and Xi
-			bit_array_and(t, refutation, matrixH->matrix[i]);
+			t=(X&matrixH->matrix[i]);
 
-			//t XOR X
-			bit_array_xor(result, t, refutation);
+			//result= t XOR X
+			result= (t^X);
 
-			if (bit_array_num_bits_set(result) == 0) { // if t XOR X = 0
+			if (!result) { // if t XOR X = 0
 				// X is subset of Xi
-				// get away X
+				// throw away X
 				return 0;
 			} else {
 				//t XOR Xi
-				bit_array_xor(result, t, matrixH->matrix[i]);
-				if (bit_array_num_bits_set(result) == 0) { // if t XOR Xi == 0
+				result= (t^matrixH->matrix[i]);
+				if (!result) { // if t XOR Xi == 0
 					// Xi is subset of X
 					// remove all of Xi which are subset of X
 					removeHi(matrixH, i);
 				}
 
 			}
-            bit_array_free(t);
-            bit_array_free(result);
 
 		}
-		addHi(matrixH, refutation);
+		addHi(matrixH, X);
 	}
 
 	//Idea: compact array of Hs
@@ -117,6 +110,9 @@ RC checkRefutationInH(H *matrixH, unsigned int from, unsigned int to,
 
 }
 
+/**
+* PENDIENT
+**/
 //multi-core method to find refutations for one determined attribute
 RC findRefutationsMulti(int ** relation, H *matrixH, int Y, int numAttributes,
 		int numTuples) {
@@ -128,15 +124,18 @@ RC findRefutationsMulti(int ** relation, H *matrixH, int Y, int numAttributes,
 
 			if (relation[i][Y] != relation[j][Y]) {
 				//new refutation found
-				BIT_ARRAY *refutation = bit_array_create(numAttributes);
+				word_t refutation = 0x00000000;
+				word_t mask = 1;
 				for (X = numAttributes - 1; X >= 0; X--) {
-					if (relation[i][X] == relation[j][X]) {
-						bit_array_set_bit(refutation, X);
+					if (Y!=X &&relation[i][X] == relation[j][X]) {
+						mask = 1;
+						mask<<=X;
+						refutation|=mask;
 					}
 				}
-				if (bit_array_num_bits_set(refutation) == 0)
+				if (!refutation){
 					continue;
-
+				}
 				//call multi-threading function
 				//PENDIENT..
 				// the idea is to split H and define 'from' and 'to' indexes for each thread
@@ -144,8 +143,11 @@ RC findRefutationsMulti(int ** relation, H *matrixH, int Y, int numAttributes,
 				args->matrixH = matrixH;
 				args->from = 0;
 				args->to = matrixH->numRefutations;
-				args->refutation = refutation;
+				args->X = refutation;
 				pthread_t thread;
+				/**
+				*PENDIENT
+				*/
 				pthread_create(&thread, NULL, checkRefutationInHMulti, args);
 				pthread_join(thread, NULL);
 				//show H
@@ -161,49 +163,54 @@ RC findRefutationsMulti(int ** relation, H *matrixH, int Y, int numAttributes,
 }
 
 /**
- * multi-core method to check maximality of a refutation vs H
- **/
+* PENDIENT
+**/
+//multi-core method to check maximality of a refutation vs H
+
+
 void *checkRefutationInHMulti(void *argsThread) {
 	argumentsH *args = (argumentsH *) argsThread;
-	unsigned int i;
-
-	if (args->to == 0) // there is no refutations to compare with, add it
-		addHi(args->matrixH, args->refutation);
-	else {
-		for (i = args->from; i < args->to; i++) {
-			if (args->matrixH->matrix[i] == NULL)
+	unsigned int i,j=0;
+	int rc=0;
+	if (args->matrixH->numRefutations == 0){ // there is no refutations to compare with, add it
+		if((rc=addHi(args->matrixH, args->X))!=0)
+			return NULL;
+	}else {
+		word_t t, result;
+		for (i = 0; i < args->matrixH->size && j<args->matrixH->numRefutations; i++) {
+			if (!args->matrixH->matrix[i])
 				continue;
-			BIT_ARRAY * t = bit_array_create(args->matrixH->numAttributes);
-			BIT_ARRAY * result = bit_array_create(args->matrixH->numAttributes);
 
 			// t= X and Xi
-			bit_array_and(t, args->refutation, args->matrixH->matrix[i]);
+			t=(args->X&args->matrixH->matrix[i]);
 
-			//t XOR X
-			bit_array_xor(result, t, args->refutation);
+			//result= t XOR X
+			result= (t^args->X);
 
-			if (bit_array_num_bits_set(result) == 0) { // if t XOR X = 0
+			if (!result) { // if t XOR X = 0
 				// X is subset of Xi
-				// get away X
-				pthread_exit(NULL);
+				// throw away X
+				return 0;
 			} else {
-				//t XOR X
-				bit_array_xor(result, t, args->matrixH->matrix[i]);
-				if (bit_array_num_bits_set(result) == 0) { // if t XOR Xi = 0
+				//t XOR Xi
+				result= (t^args->matrixH->matrix[i]);
+				if (!result) { // if t XOR Xi == 0
 					// Xi is subset of X
 					// remove all of Xi which are subset of X
-					bit_array_free(args->matrixH->matrix[i]);
+					removeHi(args->matrixH, i);
 				}
 
 			}
 
 		}
-		addHi(args->matrixH, args->refutation);
+		addHi(args->matrixH, args->X);
 	}
+
 
 	pthread_exit(NULL);
 
 }
+
 
 RC readDataSet(int ** relation, char nameRelation[], unsigned int numAttributes,
 		unsigned int numTuples, char * delimiter) {
@@ -300,11 +307,10 @@ int main(int argc, char* argv[]) {
 			destroyH(matrixH);
 		}
 	} else {
-		for (k = numAttributes - 1; k >= 0; k--) {
-			H * matrixH = createH(numAttributes, k);
-			rc = findRefutationsMulti(relation, matrixH, k, numAttributes,
-					numTuples);
-		}
+//		for (k = numAttributes - 1; k >= 0; k--) {
+//			H * matrixH = createH(numAttributes, k);
+//			rc = findRefutationsMulti(relation, matrixH, k, numAttributes,numTuples);
+//		}
 	}
 
 	return rc;
