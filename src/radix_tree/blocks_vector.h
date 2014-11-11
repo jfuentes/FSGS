@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 
+typedef uint_fast16_t blocks_vector_index_t;
 
 template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
   static_assert(K >= B, "K, the number of bits in tree, must be larger than B, the number of bits in node.");
@@ -67,7 +68,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
   enum FindType{ subset, superset, equal};
 
   template <bool stop_first, FindType find_type> bool const FindElems(
-      const Query<K> & q, BlocksVector<StorageType, B, K> * matches) const {
+      const Query<K> & q, vector<blocks_vector_index_t> * matches) const {
     // calling stop_first and do not provide matches makes no sense
     assert(stop_first ||  matches != nullptr);
 
@@ -99,7 +100,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
       cout << "Found. find_type: " << find_type << " query: " << bitset<block_bitsize>(q_st) << " mask:" << bitset<block_bitsize>(mask_q_one)  << " offset: " << (int)i << endl;
 #endif
          if( matches != nullptr)
-            matches->InsertElem(q_st);
+            matches->push_back(idx_cur_elem);
          if (stop_first)
             return true;
         }
