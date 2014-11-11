@@ -1,15 +1,14 @@
 
 CFLAGS = -g -Wall -Wextra -Iutil -Lutil
 
-all: main 
+all: main  test
 
-main: main.c H.c util/libbitarr.a
+main: main.c H.c testH.c 
 	$(CC) $(CFLAGS) -Wc++-compat -o main main.c H.c -lbitarr -lpthread
-
-test: main 
-	./main
+	$(CC) $(CFLAGS) -Wc++-compat -o testH testH.c H.c
+	
 
 clean:
-	rm -rf main H *.o *.dSYM *.greg
+	rm -rf main testH H *.o *.dSYM *.greg
 
 .PHONY: all clean test

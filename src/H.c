@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include "H.h"
 
 H* createH(unsigned int numAttributes, unsigned int Y){
@@ -30,7 +29,7 @@ RC addHi(H *h, word_t newRef){
       if(h->matrix==NULL)
         return -11; // out of memory
       h->size=h->size*2; //update the matrix size
-      printf("\nMatrix H was incresed to %d",h->size);
+      //printf("\nMatrix H was incresed to %d",h->size);
     }
     pos=h->firstAvailablePosition;
     h->firstAvailablePosition++;
@@ -38,7 +37,6 @@ RC addHi(H *h, word_t newRef){
 
   h->matrix[pos]=newRef; //add the new refutation
   h->numRefutations++;
-
   return 0;
 }
 
@@ -50,7 +48,7 @@ void removeHi(H *h, unsigned int i){
   newNode->position=i;
   newNode->next=h->deletedPositions->next; //add new node
   h->deletedPositions->next=newNode;
-	h->matrix[i]= 0x0000;
+  h->matrix[i]= 0x0000;
 }
 
 void destroyH(H *h){
@@ -68,12 +66,12 @@ void destroyH(H *h){
 
 void printH(H *h){
   unsigned int i,j=0;
-  printf("\nMatrix H for Y=%d\n",h->Y);
+  printf("\nMatrix H for Y=%d |H|=%d\n",h->Y, h->numRefutations);
   for(i=0; i<h->size && j<h->numRefutations;i++){
     if(h->matrix[i]){
       printbits(h->matrix[i], h->numAttributes);
       printf("\n");
-			j++;
+      j++;
     }
   }
 }
@@ -86,4 +84,20 @@ void printbits(word_t x, unsigned int length) {
         x>>=1;  // shift right 1 bit
         i++;
      } while( i < length);
+}
+
+void printbitsToFile(FILE *file, word_t x, unsigned int length){
+     unsigned int i=0;
+     do
+     { // fill in array from right to left
+        fprintf(file,"%c",(x & 1) ? '1':'0');
+        x>>=1;  // shift right 1 bit
+        i++;
+     } while( i < length);
+     fprintf(file,"\n");
+}
+
+void printIntToFile(FILE *file, word_t x){
+     fwrite(&x, sizeof(x), 1, file);
+     //fprintf(file, "%d\n", x);
 }

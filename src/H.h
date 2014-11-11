@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <stdio.h>
 
 #define INITIAL_SIZE_H 100
 #define SEQUENTIAL_ALGORITHM 0
@@ -42,3 +43,7 @@ void destroyH(H *h);
 void printH(H *h);
 
 void printbits(word_t n, unsigned int length);
+
+void printbitsToFile(FILE *file, word_t x, unsigned int length);
+
+void printIntToFile(FILE *file, word_t x);
