@@ -99,10 +99,13 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
 #ifdef DEBUG
       cout << "Found. find_type: " << find_type << " query: " << bitset<block_bitsize>(q_st) << " mask:" << bitset<block_bitsize>(mask_q_one)  << " offset: " << (int)i << endl;
 #endif
-         if( matches != nullptr)
+          if( matches != nullptr) {
             matches->push_back(idx_cur_elem);
-         if (stop_first)
+            cout << "pushed backed: " << idx_cur_elem << endl;
+          }
+          if (stop_first) {
             return true;
+          }
         }
         mask_q_one <<= B;
       }
@@ -111,8 +114,8 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
   };
 
 
-  void DeleteElems(vector<size_t> & idxs_elems_to_rm) {
-    if (idxs_elems_to_rm.size() == 0)
+  void DeleteElems(vector<blocks_vector_index_t> & idxs_elems_to_rm) {
+    if (idxs_elems_to_rm.size() == 0 || nr_elems() == 0)
       return;
 
     // Sort indexes elements to remove in ascending order
@@ -130,17 +133,17 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     const size_t nr_elems_rm = idxs_elems_to_rm.size();
 
     cout << bitset<K>(elem_mask) << endl;
-    while(i_orig < nr_elems_orig ) {
-      cout << "loop " << i_orig << endl;
+    while (i_orig < nr_elems_orig ) {
+      cout << "i_orig: " << i_orig << " \tnr_elems_orig: " << nr_elems_orig << endl;
       // Move i_orig until idx next elem to add
-      while(i_rm <  nr_elems_rm && i_orig == idxs_elems_to_rm[i_rm]) {
+      while (i_rm <  nr_elems_rm && i_orig == idxs_elems_to_rm[i_rm]) {
         ++i_rm;
         ++i_orig;
       }
-      if(i_orig < nr_elems_orig) {
+      if (i_orig < nr_elems_orig) {
         cout << "loop_after. orig: " << i_orig << " dest: " << i_dest << " rm: " << i_rm << endl; 
         CopyElemsBetweenBlocks(i_orig & offset_mask, i_dest & offset_mask,
-                               aux_elem_blocks[i_orig / B], elem_blocks[i_dest / B]);
+                               aux_elem_blocks[i_orig / nr_elems_per_block], elem_blocks[i_dest / nr_elems_per_block]);
         ++i_dest;
         ++i_orig;
       }
@@ -152,8 +155,12 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     elems_size_residual = (i_dest) & offset_mask;
 
     // Delete unused blocks
+    assert(i_orig > 0);
+    size_t nr_blocks_rm = (i_dest == 0) ? elem_blocks.size(): (i_orig - 1) / nr_elems_per_block - (i_dest - 1) / nr_elems_per_block;
 
-    size_t nr_blocks_rm = (i_orig-1)/B - (i_dest-1) / B;
+    cout << "Deleting " << nr_blocks_rm << " blocks." << endl;
+
+    assert(nr_blocks_rm <= elem_blocks.size());
     elem_blocks.erase(elem_blocks.end() - nr_blocks_rm, elem_blocks.end());
   }
 

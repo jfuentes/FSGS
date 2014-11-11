@@ -7,11 +7,11 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
   void InsertElement(const Query<K> & q, vector<blocks_vector_index_t> & idx_subsets) {
 
-    if ( containsSuperset(q) ) {
+    if ( ! containsSuperset(q) ) {
       elems.template FindElems<false, decltype(elems)::FindType::subset>(q, & idx_subsets);
+      auto q_st = q.template AsStorageType<StorageType, B, false>();
+      elems.InsertElem(q_st);
     }
-    auto q_st = q.template AsStorageType<StorageType, B, false>();
-    elems.InsertElem(q_st);
   }
 
   void DeleteElems(vector<blocks_vector_index_t> & idxs_elems_to_rm) {
@@ -57,6 +57,11 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   }
 
   void Compact() {
+
+    cout << "indexes to delete" << endl;
+    for(auto e : idx_subsets)
+      cout << e << endl;
+    cout << "end " << endl;
     root.DeleteElems(idx_subsets);
     idx_subsets.clear();
   }
