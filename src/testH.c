@@ -33,7 +33,7 @@ long timediff(clock_t t1, clock_t t2) {
 RC findRefutations(word_t * refutations, H *matrixH, unsigned	int numRefs) {
 	clock_t start, stop;
 	long elapsed;
-	
+
 	start=clock();
 	unsigned int i=0;
 
@@ -41,16 +41,17 @@ RC findRefutations(word_t * refutations, H *matrixH, unsigned	int numRefs) {
 	for(i=0; i<numRefs; i++){
 		checkRefutationInH(matrixH, refutations[i]);
 	}
-	
+
 	//printf("refutation found: [%d][%d] ",i,j);
 	//printbits(refutation, numAttributes);
 	//printf("  %d",refutation);
 	//printf("\n");
 	stop=clock();
 	elapsed = timediff(start, stop);
-    	printf("\nelapsed: %ld ms\n", elapsed);
-	
-				
+   printf("\n# maximal refutations: %d", matrixH->numRefutations);
+   printf("\nelapsed: %ld ms\n", elapsed);
+
+
 	//printH(matrixH);
 
 	return 0;
@@ -107,14 +108,15 @@ RC checkRefutationInH(H *matrixH, word_t X) {
 
 
 
-RC readDataSet(word_t * refutations, char filename[], unsigned int numRefs) {
+RC readDataSet(word_t * refutations, char setName[], unsigned int numRefs) {
 
 	unsigned int row = 0;
 	word_t i;
 
-	printf("\nOpening %s", filename);
-
-	FILE * file = fopen(filename, "r");
+	printf("\nOpening %s", setName);
+   char fileName[100];
+   sprintf(fileName, "test_cases/%s", setName);
+	FILE * file = fopen(fileName, "r");
 
 	if (file == NULL) {
 		return -10;
@@ -163,7 +165,7 @@ int main(int argc, char* argv[]) {
 		return rc;
 	}
 	destroyH(matrixH);
-	
+
 
 	return rc;
 }
