@@ -134,7 +134,6 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     const size_t nr_elems_orig = nr_elems();
     const size_t nr_elems_rm = idxs_elems_to_rm.size();
 
-    cout << bitset<K>(elem_mask) << endl;
     while (i_orig < nr_elems_orig ) {
 #ifdef DEBUG
       cout << "i_orig: " << i_orig << " \tnr_elems_orig: " << nr_elems_orig << endl;

@@ -22,10 +22,10 @@ void load_data_file(const string & filename, vector<file_storage_t> & vec){
   file.seekg(0, ios::beg);
 
   vec.reserve(file_size);
-  cout << endl << "file size: "<< file_size << endl;
-  cout << endl << "nr cases: "<< file_size/4 << endl;
-
   uint32_t tmp;
+  cout << endl << "file size: "<< file_size << endl;
+  cout << endl << "nr cases: "<< file_size/sizeof(tmp) << endl;
+
   while(file.good()) {
     file.read((char*)&tmp, sizeof(tmp));
     vec.push_back(tmp);

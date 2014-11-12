@@ -8,4 +8,7 @@ tests: $(TEST_SOURCES)
 	$(CC) $(CFLAGS) $(TEST_SOURCES) -o bin/tests
 
 prof: query.h blocks_vector.h radix_tree.h profiling.cc
-	$(CC) $(CFLAGS) profiling.cc -o bin/profiling -L/usr/lib/x86_64-linux-gnu -lboost_timer -lboost_filesystem -O3
+	$(CC) $(CFLAGS) profiling.cc -o bin/profiling -L/usr/lib/x86_64-linux-gnu -lboost_timer -lboost_filesystem -O3 
+
+prof_debug: query.h blocks_vector.h radix_tree.h profiling.cc
+	$(CC) $(CFLAGS) profiling.cc -o bin/profiling -L/usr/lib/x86_64-linux-gnu -lboost_timer -lboost_filesystem -O3 -g
