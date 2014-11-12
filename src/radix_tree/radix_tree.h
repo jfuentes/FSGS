@@ -32,7 +32,6 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     auto tot_elems = node.elems.nr_elems();
 
     for( auto b : node.elems.elem_blocks) {
-      cout << bitset<decltype(elems)::block_bitsize>(b) << endl;
       for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
         out << iter_elems << ": \t" << bitset<B>(b) << endl;
         b >>= B;
@@ -57,11 +56,12 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   }
 
   void Compact() {
-
+#ifdef DEBUG
     cout << "indexes to delete" << endl;
     for(auto e : idx_subsets)
       cout << e << endl;
     cout << "end " << endl;
+#endif
     root.DeleteElems(idx_subsets);
     idx_subsets.clear();
   }

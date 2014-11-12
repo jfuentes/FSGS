@@ -40,15 +40,16 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     } else {
      elem_blocks.push_back(q_st);
     }
-    cout << "elem_mask: " << bitset<block_bitsize>(elem_mask) << endl;
     elems_size_residual = (elems_size_residual + 1) & offset_mask;
   }
 
   void CopyElemsBetweenBlocks(const uint_fast8_t offset_orig, const uint_fast8_t offset_dest,
                               const StorageType block_orig, StorageType & block_dest) {
 
+#ifdef DEBUG
     cout << "block_orig: " << bitset<block_bitsize>(block_orig);
     cout << " \tblock_dest: " << bitset<block_bitsize>(block_dest) << " \toff_o: " << (int)offset_orig << " off_d: " << (int)offset_dest << endl;
+#endif
 
     // Masks to obtain elems to copy
     const StorageType orig_mask = elem_mask << (offset_orig * B);
@@ -101,7 +102,6 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
 #endif
           if( matches != nullptr) {
             matches->push_back(idx_cur_elem);
-            cout << "pushed backed: " << idx_cur_elem << endl;
           }
           if (stop_first) {
             return true;
@@ -134,23 +134,27 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
 
     cout << bitset<K>(elem_mask) << endl;
     while (i_orig < nr_elems_orig ) {
+#ifdef DEBUG
       cout << "i_orig: " << i_orig << " \tnr_elems_orig: " << nr_elems_orig << endl;
+#endif
       // Move i_orig until idx next elem to add
       while (i_rm <  nr_elems_rm && i_orig == idxs_elems_to_rm[i_rm]) {
         ++i_rm;
         ++i_orig;
       }
       if (i_orig < nr_elems_orig) {
+#ifdef DEBUG
         cout << "loop_after. orig: " << i_orig << " dest: " << i_dest << " rm: " << i_rm << endl; 
+#endif
         CopyElemsBetweenBlocks(i_orig & offset_mask, i_dest & offset_mask,
                                aux_elem_blocks[i_orig / nr_elems_per_block], elem_blocks[i_dest / nr_elems_per_block]);
         ++i_dest;
         ++i_orig;
       }
     }
-
+#ifdef DEBUG
     cout << "elems_size_residual: " << (int)elems_size_residual << " \t i_orig: " << i_orig << " \t i_dest: " << i_dest << endl;
-
+#endif
     
     elems_size_residual = (i_dest) & offset_mask;
 
@@ -158,7 +162,9 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     assert(i_orig > 0);
     size_t nr_blocks_rm = (i_dest == 0) ? elem_blocks.size(): (i_orig - 1) / nr_elems_per_block - (i_dest - 1) / nr_elems_per_block;
 
+#ifdef DEBUG
     cout << "Deleting " << nr_blocks_rm << " blocks." << endl;
+#endif
 
     assert(nr_blocks_rm <= elem_blocks.size());
     elem_blocks.erase(elem_blocks.end() - nr_blocks_rm, elem_blocks.end());
@@ -170,7 +176,6 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     auto tot_elems = bv.nr_elems();
 
     for( auto b : bv.elem_blocks) {
-      cout << bitset<sizeof(StorageType)*8>(b) << endl;
       for(uint_fast8_t i = 0; i < bv.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
         out << iter_elems << ": \t" << bitset<B>(b) << endl;
         b >>= B;
