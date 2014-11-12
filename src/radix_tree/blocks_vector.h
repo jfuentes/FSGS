@@ -107,7 +107,8 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
             return true;
           }
         }
-        mask_q_one <<= B;
+        // This if should be solved by compiler so shift only occurs when the mask will be reused
+        mask_q_one <<= (nr_elems_per_block > 1)?B:0;
       }
     }
     return false;
@@ -120,6 +121,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
 
     // Sort indexes elements to remove in ascending order
     sort(idxs_elems_to_rm.begin(), idxs_elems_to_rm.end());
+    unique(idxs_elems_to_rm.begin(), idxs_elems_to_rm.end());
 
     // Copy current elements to auxiliar array
     vector<StorageType> aux_elem_blocks(elem_blocks);

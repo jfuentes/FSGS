@@ -6,7 +6,7 @@ TEST_CASE( "Blocks Vector", "[blocks_vector]" ) {
   const k_size_t K = 16;
   vector<blocks_vector_index_t> idx_elems_to_rm;
 
-  auto bv = BlocksVector<uint16_t, 4, K>();
+  auto bv = BlocksVector<uint32_t, 4, K>();
 
   REQUIRE( bv.nr_elems() == 0);
 

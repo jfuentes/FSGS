@@ -49,20 +49,26 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
 
   vector<blocks_vector_index_t> idx_subsets;
 
+  size_t compact_treshold;
+
+  BlockRadixTree(size_t _compact_treshold = 1000): compact_treshold(_compact_treshold){
+  }
+
   void InsertElement(const bitset<K> & q_bitset) {
     auto q = Query<K>(q_bitset, 0);
     root.InsertElement(q, idx_subsets);
-    Compact(1000);
+    Compact();
   }
+  inline void Compact() { Compact(compact_treshold);}
 
-  inline void Compact(size_t compact_treshold) {
+  inline void Compact(size_t cur_compact_treshold) {
 #ifdef DEBUG
     cout << "indexes to delete" << endl;
     for(auto e : idx_subsets)
       cout << e << endl;
     cout << "end " << endl;
 #endif
-    if ( idx_subsets.size() > compact_treshold) {
+    if ( idx_subsets.size() > cur_compact_treshold) {
       root.DeleteElems(idx_subsets);
       idx_subsets.clear();
     }

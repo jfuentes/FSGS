@@ -23,6 +23,7 @@ void load_data_file(const string & filename, vector<file_storage_t> & vec){
 
   vec.reserve(file_size);
   cout << endl << "file size: "<< file_size << endl;
+  cout << endl << "nr cases: "<< file_size/4 << endl;
 
   file_storage_t tmp;
   while(file.good()) {

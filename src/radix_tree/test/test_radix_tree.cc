@@ -20,9 +20,13 @@ TEST_CASE( "Radix Tree", "[radix_tree]") {
 
   cout << "RadixTree" << endl;
   cout << tree.root << endl;
-  tree.InsertElement(bitset<K>(11));
-  tree.InsertElement(bitset<K>(110));
-  tree.InsertElement(bitset<K>(210));
-  tree.InsertElement(bitset<K>(15));
+  tree.InsertElement(bitset<K>(11)); // Insert 00001011
+  tree.InsertElement(bitset<K>(110));// Insert 01101110
+  tree.InsertElement(bitset<K>(210));// Insert 11010010
+  tree.InsertElement(bitset<K>(15)); // Insert 00001111
+
   cout << tree.root << endl;
+  tree.Compact(0);
+  cout << tree.root << endl;
+  REQUIRE(tree.root.elems.nr_elems() == 3);
 }
