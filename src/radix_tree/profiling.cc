@@ -25,7 +25,7 @@ void load_data_file(const string & filename, vector<file_storage_t> & vec){
   cout << endl << "file size: "<< file_size << endl;
   cout << endl << "nr cases: "<< file_size/4 << endl;
 
-  file_storage_t tmp;
+  uint32_t tmp;
   while(file.good()) {
     file.read((char*)&tmp, sizeof(tmp));
     vec.push_back(tmp);
