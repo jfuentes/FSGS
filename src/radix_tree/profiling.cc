@@ -2,8 +2,9 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <boost/timer.hpp>
 
-typedef uint32_t file_storage_t;
+typedef uint64_t file_storage_t;
 
 using namespace std;
 
@@ -15,7 +16,7 @@ void load_data_file(const string & filename, vector<file_storage_t> & vec){
   }
 
   cout << "tell:"<<file.tellg() << endl;
-  file_storage_t file_size;
+  size_t file_size;
   file.seekg(0, ios::end);
   file_size = file.tellg();
   file.seekg(0, ios::beg);
@@ -32,21 +33,28 @@ void load_data_file(const string & filename, vector<file_storage_t> & vec){
 
 int main (void) {
 //  string filename = "../test_cases/23751refSet9_253x10";
-  string filename = "../test_cases/16171584refSet14_6436x15";
-//  string filename = "../test_cases/62110620refSet15_12871x16";
+//  string filename = "../test_cases/16171584refSet14_6436x15";
+  string filename = "../test_cases/62110620refSet15_12871x16";
+
+  boost::timer timer;
 
   vector<file_storage_t> vec;
   load_data_file(filename, vec);
+
+  cout << "Loading: " << timer.elapsed() <<endl;
 
   const k_size_t K = 16;
   auto tree = BlockRadixTree<file_storage_t, K>();
 
   cout << "Start insertion" << endl;
+  timer.restart();
   for(const auto e : vec) {
     tree.InsertElement(bitset<K>(e));
   }
-  cout << "Finished" << endl;
-  cout << tree.root << endl;
+  tree.Compact(0);
+  cout << "Inserting: " << timer.elapsed() << endl;
+  cout << "Finished. Rows: " << tree.root.elems.nr_elems() << endl;
+//  cout << tree.root << endl;
 }
 
 

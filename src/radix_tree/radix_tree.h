@@ -52,17 +52,19 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   void InsertElement(const bitset<K> & q_bitset) {
     auto q = Query<K>(q_bitset, 0);
     root.InsertElement(q, idx_subsets);
-    Compact();
+    Compact(1000);
   }
 
-  void Compact() {
+  inline void Compact(size_t compact_treshold) {
 #ifdef DEBUG
     cout << "indexes to delete" << endl;
     for(auto e : idx_subsets)
       cout << e << endl;
     cout << "end " << endl;
 #endif
-    root.DeleteElems(idx_subsets);
-    idx_subsets.clear();
+    if ( idx_subsets.size() > compact_treshold) {
+      root.DeleteElems(idx_subsets);
+      idx_subsets.clear();
+    }
   }
 };
