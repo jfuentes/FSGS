@@ -5,8 +5,9 @@
 
 typedef uint_fast16_t blocks_vector_index_t;
 
-template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
-  static_assert(K >= B, "K, the number of bits in tree, must be larger than B, the number of bits in node.");
+enum FindType{ subset, superset, equal};
+
+template <typename StorageType, k_size_t B> struct BlocksVector {
   static_assert(B <= sizeof(StorageType) * 8, "Number of bits in storage type must have at least B.");
   static_assert(sizeof(StorageType) * 8 % B == 0, "Number of bits in storage type must be multiple of B.");
   static_assert( (B & (B-1)) == 0, "B must be power of 2.");
@@ -66,9 +67,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
 
   }
 
-  enum FindType{ subset, superset, equal};
-
-  template <bool stop_first, FindType find_type> bool const FindElems(
+  template <bool stop_first, FindType find_type, k_size_t K> bool const FindElems(
       const Query<K> & q, vector<blocks_vector_index_t> * matches) const {
     // calling stop_first and do not provide matches makes no sense
     assert(stop_first ||  matches != nullptr);
@@ -78,6 +77,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
     size_t idx_cur_elem = 0;
     const auto tot_nr_elems = nr_elems();
 
+    bool any_found = false;
     for (const auto & block : elem_blocks) {
       const auto q_and_b = q_st & block;
 
@@ -97,6 +97,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
           case FindType::equal   : found = (q_st & mask_q_one)    == (block & mask_q_one); break;
         }
         if (found) {
+          any_found |= found;
 #ifdef DEBUG
       cout << "Found. find_type: " << find_type << " query: " << bitset<block_bitsize>(q_st) << " mask:" << bitset<block_bitsize>(mask_q_one)  << " offset: " << (int)i << endl;
 #endif
@@ -111,7 +112,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlocksVector {
         mask_q_one <<= (nr_elems_per_block > 1)?B:0;
       }
     }
-    return false;
+    return any_found;
   };
 
 

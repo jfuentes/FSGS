@@ -2,99 +2,90 @@
 #include "blocks_vector.h"
 #include <map>
 
-template <typename StorageType, k_size_t B, k_size_t K> struct BaseBlockRadixTreeNode {
+template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNode {
 
-  BlocksVector<StorageType, B, K> elems;
+  BlocksVector<StorageType, B> elems;
 
+  // Cleared on every cool to FindType
   vector<blocks_vector_index_t> aux_elem_idxs;
 
+  vector< BlockRadixTreeNode<StorageType, B, K> *> children;
+
+  BlockRadixTree<StorageType, B, K> * tree;
+  BlockRadixTreeNode( BlockRadixTree<StorageType, B, K> * _tree):tree(_tree) {}
+
+  template <bool stop_first, FindType find_type> bool const FindElems(
+      const Query<K> & q, vector<blocks_vector_index_t> * matches) {
+
+    Query<K> new_q (q);
+    new_q.k_offset += B;
+    const bool is_last_node = new_q.k_offset == K;
+
+    aux_elem_idxs.clear();
+
+    const bool found = elems.template FindElems<stop_first, find_type>(q, (is_last_node)? matches: &aux_elem_idxs);
+
+    if (found & !is_last_node) {
+      bool any_found = false;
+      for(auto vect_idx : aux_elem_idxs){
+        any_found |= children[vect_idx]->template FindElems<stop_first, find_type>(new_q, matches);
+      }
+      return any_found;
+    }
+    return found;
+  }
+
   bool const containsSubset(const Query<K> & q) const {
-    return elems.template FindElems<true, decltype(elems)::FindType::subset>(q, nullptr);
+    return elems.template FindElems<true, FindType::subset>(q, nullptr);
   }
 
-  bool const containsSuperset(const Query<K> & q) const {
-    return elems.template FindElems<true, decltype(elems)::FindType::superset>(q, nullptr);
+ bool const containsSuperset(const Query<K> & q) const {
+    return FindElems<true, FindType::superset>(q, nullptr);
   }
 
-  bool const findSubsets(const Query<K> & q) const {
-    return elems.template FindElems<false, decltype(elems)::FindType::subset>(q, &aux_elem_idxs);
+  bool const findSubsets(const Query<K> & q, vector<blocks_vector_index_t> * matches) const {
+    return FindElems<false, FindType::subset>(q, matches);
   }
 
-  bool const findSupersets(const Query<K> & q) const {
-    return elems.template FindElems<false, decltype(elems)::FindType::superset>(q, &aux_elem_idxs);
+  bool const findSupersets(const Query<K> & q, vector<blocks_vector_index_t> * matches) const {
+    return FindElems<false, FindType::superset>(q, matches);
   }
 
-  friend ostream& operator<< (ostream & out, const BlockRadixTreeNode & node) {
+  void InsertElement(Query<K> & q) {
+    aux_elem_idxs.clear();
+    const bool subq_exists = elems.template FindElems<true, FindType::equal, K>(q, &aux_elem_idxs);
 
-    size_t iter_elems = 0;
-    auto tot_elems = node.elems.nr_elems();
+    Query<K> new_q (q);
+    new_q.k_offset += B;
+    const bool is_last_node = new_q.k_offset == K;
 
-    for( auto b : node.elems.elem_blocks) {
-      for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
-        out << iter_elems << ": \t" << bitset<B>(b) << endl;
-        b >>= B;
-      }
-    }
-    return out;
-  }
-};
-
-template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNode: BaseBlockRadixTreeNode<StorageType, B, K> {
-
-  vector<BlockRadixTreeNode*> children;
-
-  void InsertElement(Query<K> & q, vector<blocks_vector_index_t> & idx_subsets) {
-    aux_idx_subsets.clear();
-
-    auto q_st = q.template AsStorageType<StorageType, B, false>();
-
-    // Go one level lower
-    assert(q.k_offset >= B);
-    q.k_offset -= B;
-
-    bool found = findSupersets(q);
-
-    if (found) {
-      for (idx_children : aux_elem_idxs) {
-        children[idx_children]->InsertElement(q);
-      }
+    if (subq_exists) {
+      cout << aux_elem_idxs.back() << endl;
+      if(!is_last_node)
+        children[aux_elem_idxs.back()]->InsertElement(new_q);
     } else {
-      elems.InsertElem(q_st);
-   
-      if(q.k_offset == 0) {
-        // We've reached leafs
-        auto new_node = new BlockRadixTreeLeaf();
-      } else {
-        auto new_node = new BlockRadixTreeNode();
-      }
-      new_node.InsertElement(q);
-      children.push_back(new_node); 
-    }
-  }
-};
-
-template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeLeaf: BaseBlockRadixTreeNode<StorageType, B, K> {
-
-  void InsertElement(const Query<K> & q) {
-    if ( ! containsSuperset(q) ) {
-      elems.template FindElems<false, decltype(elems)::FindType::subset>(q, & idx_subsets);
+      // Subquery does not exists
       auto q_st = q.template AsStorageType<StorageType, B, false>();
       elems.InsertElem(q_st);
+
+      if(!is_last_node) {
+        // We have not reached leafs yet
+        auto new_node = new BlockRadixTreeNode();
+        new_node->InsertElement(new_q);
+        children.push_back(new_node);
+      } else {
+        // Terminal Node, find subsets and set them to remove
+
+/*        auto iter_idxs_to_del = tree.idxs_to_delete.find(this);
+        if (iter_idxs_to_del == map::end) {
+          iter_idxs_to_del.emplace(v
+        }*/
+        Query<K> q_from_top(q);
+        q_from_top.k_offset = 0;
+        tree->root.findSubsets(q, &tree->idxs_to_delete[this]);
+      }
     }
   }
-
-  void DeleteElems(vector<blocks_vector_index_t> & idxs_elems_to_rm) {
-    elems.DeleteElems(idxs_elems_to_rm);
-  }
-
-  bool const containsSubset(const Query<K> & q) const {
-    return elems.template FindElems<true, decltype(elems)::FindType::subset>(q, nullptr);
-  }
-
-  bool const containsSuperset(const Query<K> & q) const {
-    return elems.template FindElems<true, decltype(elems)::FindType::superset>(q, nullptr);
-  }
-
   friend ostream& operator<< (ostream & out, const BlockRadixTreeNode & node) {
 
     size_t iter_elems = 0;
@@ -106,7 +97,6 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeLea
         b >>= B;
       }
     }
-
     return out;
   }
 };
@@ -116,7 +106,7 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
 
   BlockRadixTreeNode<StorageType, B, K> root;
 
-  map<BlockRadixTreeLeaf<StorageType, B, K> *, vector<blocks_vector_index_t> > idx_subsets;
+  map<BlockRadixTreeNode<StorageType, B, K> *, vector<blocks_vector_index_t> > idxs_to_delete;
 
   size_t compact_treshold;
 
@@ -125,7 +115,7 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
 
   void InsertElement(const bitset<K> & q_bitset) {
     auto q = Query<K>(q_bitset, 0);
-    root.InsertElement(q, idx_subsets);
+    root.InsertElement(q);
     Compact();
   }
   inline void Compact() { Compact(compact_treshold);}
@@ -133,13 +123,18 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   inline void Compact(size_t cur_compact_treshold) {
 #ifdef DEBUG
     cout << "indexes to delete" << endl;
-    for(auto e : idx_subsets)
+    for(auto e : idxs_to_delete)
       cout << e << endl;
     cout << "end " << endl;
 #endif
-    if ( idx_subsets.size() > cur_compact_treshold) {
-      root.DeleteElems(idx_subsets);
-      idx_subsets.clear();
+    if ( idxs_to_delete.size() > cur_compact_treshold) {
+      DeleteElems();
+      idxs_to_delete.clear();
+    }
+  }
+  void DeleteElems() {
+    for(auto b: idxs_to_delete) {
+      b.DeleteElems(idxs_to_delete[*b]);
     }
   }
 };
