@@ -2,7 +2,7 @@
 #include "blocks_vector.h"
 #include <map>
 
-template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNode {
+template <typename StorageType, typename TreeType k_size_t B, k_size_t K> struct BlockRadixTreeNode {
 
   BlocksVector<StorageType, B> elems;
 
@@ -11,8 +11,8 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
   vector< BlockRadixTreeNode<StorageType, B, K> *> children;
 
-  BlockRadixTree<StorageType, B, K> * tree;
-  BlockRadixTreeNode( BlockRadixTree<StorageType, B, K> * _tree):tree(_tree) {}
+  TreeType * tree;
+  BlockRadixTreeNode( TreeType * _tree):tree(_tree) {}
 
   template <bool stop_first, FindType find_type> bool const FindElems(
       const Query<K> & q, vector<blocks_vector_index_t> * matches) {
@@ -70,6 +70,8 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
       if(!is_last_node) {
         // We have not reached leafs yet
+
+        // TODO: use smart_ptrs
         auto new_node = new BlockRadixTreeNode();
         new_node->InsertElement(new_q);
         children.push_back(new_node);
@@ -91,6 +93,10 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     size_t iter_elems = 0;
     auto tot_elems = node.elems.nr_elems();
 
+/*
+    // TODO: Are there more reliable ways to check if it is a leafi
+    const bool last_node = children.size() == 0 && tot_elems > 0;
+*/
     for( auto b : node.elems.elem_blocks) {
       for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
         out << iter_elems << ": \t" << bitset<B>(b) << endl;
