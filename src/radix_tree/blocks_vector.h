@@ -25,6 +25,9 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
   vector<StorageType> elem_blocks;
   uint_fast8_t elems_size_residual = 0;
 
+  size_t is_empty() const {
+    return elem_blocks.size() == 0;
+  }
   size_t nr_elems() const {
     return (elems_size_residual == 0)? elem_blocks.size() * nr_elems_per_block: (elem_blocks.size() - 1) * nr_elems_per_block + elems_size_residual;
   }

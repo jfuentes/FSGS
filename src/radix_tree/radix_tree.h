@@ -17,7 +17,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
   vector< unique_ptr<BlockRadixTreeNode<StorageType, B, K> > > children;
 
-  const BlockRadixTreeNode<StorageType, B, K> * const parent;
+  BlockRadixTreeNode<StorageType, B, K> * parent;
 
   BlockRadixTreeNode():parent(nullptr){};
   BlockRadixTreeNode(BlockRadixTreeNode<StorageType, B, K> * _parent): parent(_parent) {
@@ -83,13 +83,15 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     }
   }
 
-  void CleanChildren() {
+  void RemoveEmptyChildren() {
     aux_elem_idxs.clear();
 
     size_t idx = 0;
     for (auto & child : children) {
-      if (child.elems.size() == 0)
+      if (child->elems.is_empty()) {
+        cout << "RemoveEmptyChildren: " << *child << " \t idx: " << idx << endl;
         aux_elem_idxs.push_back(idx++);
+      }
     }
     DeleteElems(aux_elem_idxs);
   }
@@ -99,10 +101,13 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
     // Remove children as well if it is not a leaf node
     if (children.size() > 0) {
-      assert(children.size() < idxs_elems_to_rm.size());
+      assert(children.size() >= idxs_elems_to_rm.size());
       auto rit_idx = idxs_elems_to_rm.rbegin();
-      while(rit_idx != idxs_elems_to_rm.rend())
-        children.erase(*rit_idx);
+      while(rit_idx != idxs_elems_to_rm.rend()) {
+        cout << "Removing children at index: " << *rit_idx << endl;
+        children.erase(children.begin() + *rit_idx);
+        ++rit_idx;
+      }
     }
     // TODO: Eliminate empty parents
   }
@@ -128,7 +133,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
 template <typename StorageType, k_size_t K> struct BlockRadixTree {
 
-  static const k_size_t B = K;
+  static const k_size_t B = K/2;
   BlockRadixTreeNode<StorageType, B, K> root;
   IdxsNodeContainer<BlockRadixTreeNode<StorageType, B, K> > idxs_to_delete;
 
@@ -142,7 +147,9 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
     auto q = Query<K>(q_bitset, 0);
     bool q_is_contained = root.template FindElemsInTree<true, FindType::superset > (q, nullptr);
 
+    cout << "contained " << endl;
     if ( ! q_is_contained) {
+      cout << "no contained " << endl;
       // Query is contained, find elements that are contained in new query and register them for deletion on next compact
       root.template FindElemsInTree<false, FindType::subset>(q, & idxs_to_delete);
       root.InsertElement(q);
@@ -158,9 +165,9 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   void Compact() {
 #ifdef DEBUG
     cout << "indexes to delete" << endl;
-    for(auto node_pair : idxs_to_delete) {
+    for(const auto & node_pair : idxs_to_delete) {
       cout << "node: " << node_pair.first << " \tidxs: ";
-      for( auto e: node_pair.second) {
+      for( const auto & e: node_pair.second) {
         cout << e << " ,";
       }
       cout << endl;
@@ -172,23 +179,28 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   }
 
   void DeleteElems() {
+
     set <BlockRadixTreeNode<StorageType, B, K> *> nodes_to_try_delete;
 
     for(auto & b: idxs_to_delete) {
+//      cout << "delete: " << b.first << endl;
       b.first->DeleteElems(b.second);
-      if(b.first->elems.nr_elems() == 0) {
-//        nodes_to_try_delete.insert(b.first->parent);
+      if(b.first->elems.is_empty()) {
+//        cout << "is empty: "<< b.first << " parent: " << b.first->parent << endl;
+        nodes_to_try_delete.insert((b.first->parent));
       }
     }
 
     // Delete empty nodes
 
- this is woring review and simplify
     while(nodes_to_try_delete.size() > 0) {
       for(auto node : nodes_to_try_delete) {
-        node->CleanChildren();
-        if( node->elems.nr_elems() == 0)
-          nodes_to_try_delete.insert(node);
+//        cout << "Loop RemoveEmptyChildren, node: " << node << endl;
+        node->RemoveEmptyChildren();
+        if( node->elems.is_empty() && node != &root) {
+          nodes_to_try_delete.insert(node->parent);
+        }
+        nodes_to_try_delete.erase(node);
       }
     }
   }

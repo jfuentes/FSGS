@@ -4,11 +4,11 @@
 #include <fstream>
 #include <boost/timer.hpp>
 
-typedef uint64_t file_storage_t;
+typedef uint64_t storage_t;
 
 using namespace std;
 
-void load_data_file(const string & filename, vector<file_storage_t> & vec){
+void load_data_file(const string & filename, vector<storage_t> & vec){
 
   ifstream file(filename, std::ios::in | std::ios::binary);
   if (!file.good()) {
@@ -39,13 +39,13 @@ int main (void) {
 
   boost::timer timer;
 
-  vector<file_storage_t> vec;
+  vector<storage_t> vec;
   load_data_file(filename, vec);
 
   cout << "Loading: " << timer.elapsed() <<endl;
 
   const k_size_t K = 16;
-  auto tree = BlockRadixTree<file_storage_t, K>();
+  auto tree = BlockRadixTree<storage_t, K>();
 
   cout << "Start insertion" << endl;
   timer.restart();
