@@ -4,6 +4,7 @@
 #include <algorithm>
 
 typedef uint_fast16_t blocks_vector_index_t;
+typedef vector<blocks_vector_index_t> IdxsContainer;
 
 enum FindType{ subset, superset, equal};
 
@@ -68,7 +69,7 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
   }
 
   template <bool stop_first, FindType find_type, k_size_t K> bool const FindElems(
-      const Query<K> & q, vector<blocks_vector_index_t> * matches) const {
+      const Query<K> & q, IdxsContainer * matches) const {
     // calling stop_first and do not provide matches makes no sense
     assert(stop_first ||  matches != nullptr);
 
@@ -116,7 +117,8 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
   };
 
 
-  void DeleteElems(vector<blocks_vector_index_t> & idxs_elems_to_rm) {
+  void DeleteElems(IdxsContainer & idxs_elems_to_rm) {
+    // TODO: DeleteElems will be much more efficient with a set rather than a vector
     if (idxs_elems_to_rm.size() == 0 || nr_elems() == 0)
       return;
 

@@ -11,6 +11,7 @@ template <k_size_t K> struct Query {
   }
 
   template <typename StorageType, k_size_t B, bool fill_storage_type> StorageType AsStorageType () const {
+    // Recall that in bitset, [0] is the least significant bit, hence, q=0 will get the B least significant bits
     static_assert( (B & (B-1)) == 0, "B must be power of 2.");
     //K must be larger or equal that k_offset.
      assert(k_offset + B <= K);
@@ -33,7 +34,7 @@ template <k_size_t K> struct Query {
   };
 
   friend ostream& operator<< (ostream & out, const  Query & q_obj) {
-    out << q_obj.q;
+    out << "bitset: " << q_obj.q.to_string() << " \tk_offset: " << (unsigned int)q_obj.k_offset << endl;
     return out;
   }
 };

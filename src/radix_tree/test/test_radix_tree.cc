@@ -29,7 +29,7 @@ TEST_CASE( "Radix Tree", "[radix_tree]") {
   tree.InsertElement(bitset<K>(15)); // Insert 00001111
 
   cout << tree.root << endl;
-  tree.Compact(0);
+  tree.Compact();
   cout << tree.root << endl;
   REQUIRE(tree.root.elems.nr_elems() == 3);
 }

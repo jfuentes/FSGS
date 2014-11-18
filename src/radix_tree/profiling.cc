@@ -52,7 +52,7 @@ int main (void) {
   for(const auto e : vec) {
     tree.InsertElement(bitset<K>(e));
   }
-  tree.Compact(0);
+  tree.Compact();
   cout << "Inserting: " << timer.elapsed() << endl;
   cout << "Finished. Rows: " << tree.root.elems.nr_elems() << endl;
 //  cout << tree.root << endl;

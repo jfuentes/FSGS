@@ -3,7 +3,7 @@
 
 typedef uint8_t k_size_t;
 
-//#define DEBUG
+#define DEBUG
 
 #include <iostream>
 #ifdef DEBUG
