@@ -23,7 +23,7 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
   static const StorageType offset_mask = (nr_elems_per_block - 1);
 
   vector<StorageType> elem_blocks;
-  uint_fast8_t elems_size_residual = 0;
+  uint_fast8_t elems_size_residual = 0; // Number of elements in last used block
 
   size_t is_empty() const {
     return elem_blocks.size() == 0;
@@ -168,13 +168,22 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
     // Delete unused blocks
     assert(i_orig > 0);
     size_t nr_blocks_rm = (i_dest == 0) ? elem_blocks.size(): (i_orig - 1) / nr_elems_per_block - (i_dest - 1) / nr_elems_per_block;
-
+    
 #ifdef DEBUG
     cout << "Deleting " << nr_blocks_rm << " blocks." << endl;
 #endif
 
     assert(nr_blocks_rm <= elem_blocks.size());
     elem_blocks.erase(elem_blocks.end() - nr_blocks_rm, elem_blocks.end());
+
+
+    // Fill with zeroes unused part of last block (vector element)
+    if (elems_size_residual > 0) {
+      // There is a residual
+      StorageType erase_mask = -1;
+      erase_mask >>= (nr_elems_per_block - elems_size_residual) * B;
+      elem_blocks.back() &= erase_mask;
+    }
   }
 
   friend ostream& operator<< (ostream & out, const BlocksVector & bv) {
