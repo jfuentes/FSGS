@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <iomanip>
 
 template <typename NodeType>
 using IdxsNodeContainer = map<NodeType *, IdxsContainer>;
@@ -22,10 +23,10 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
   BlockRadixTreeNode<StorageType, B, K> * parent;
 
-  BlockRadixTreeNode():BlockRadixTreeNode(nullptr, 0) {};
+  BlockRadixTreeNode():BlockRadixTreeNode(nullptr, K - B) {};
 
   BlockRadixTreeNode(BlockRadixTreeNode<StorageType, B, K> * _parent, const k_size_t _offset): 
-      parent(_parent), offset(_offset), is_last_node(_offset + B == K){
+      parent(_parent), offset(_offset), is_last_node(_offset == 0){
   };
 
   template <bool stop_first, FindType find_type> bool const FindElemsInTree(
@@ -72,7 +73,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
       if(!is_last_node) {
         cout << "New node"<< endl;
         // We have not reached leafs yet
-        unique_ptr<BlockRadixTreeNode <StorageType, B, K> > new_node(new BlockRadixTreeNode(this, offset + B));
+        unique_ptr<BlockRadixTreeNode <StorageType, B, K> > new_node(new BlockRadixTreeNode(this, offset - B));
         new_node->InsertElement(q);
         children.push_back(move(new_node));
       }
@@ -111,23 +112,43 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     // TODO: Eliminate empty parents
   }
 
+  vector<bitset<K>> ExtractElementsSubtree(vector<string> & ancestors_elems) {
+    size_t iter_elems = 0;
+    auto tot_elems = elems.nr_elems();
+
+    vector<bitset<K>> ret;
+
+    for(auto b: elems.elem_blocks) {
+      for(uint_fast8_t i = 0; i < elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems, b >>= B) {
+        ancestors_elems.push_back(bitset<B>(b).to_string());
+        if (is_last_node) {
+          ret.push_back(bitset<K>(accumulate(ancestors_elems.begin(), ancestors_elems.end(), string(""))));
+          ancestors_elems.pop_back();
+        } else {
+          auto ret_child = children[iter_elems]->ExtractElementsSubtree(ancestors_elems);
+          ret.insert( ret.end(), ret_child.begin(), ret_child.end());
+        }
+      }
+    }
+    return ret;
+  }
+
   friend ostream& operator<< (ostream & out, const BlockRadixTreeNode & node) {
 
     size_t iter_elems = 0;
     auto tot_elems = node.elems.nr_elems();
 
 /*
-    // TODO: Are there more reliable ways to check if it is a leafi
+    // TODO: Are there more reliable ways to check if it is a leaf
     const bool last_node = children.size() == 0 && tot_elems > 0;
 */
 /*    cout.width(node.offset + B);
     cout.fill(' ');*/
     for( auto b : node.elems.elem_blocks) {
-      for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
-        out << iter_elems << ": \t" << string(node.offset, ' ') << bitset<B>(b) << endl;
-        if (node.children.size() > 0)
+      for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems, b >>= B) {
+        out << iter_elems << ":" <<setw(18) << &node << "\t" << string(K - B - node.offset, ' ') << bitset<B>(b) << endl;
+        if (!node.is_last_node)
           out << *(node.children[iter_elems]);
-        b >>= B;
       }
     }
     return out;
@@ -209,5 +230,10 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
         nodes_to_try_delete.erase(node);
       }
     }
+  }
+
+  vector<bitset<K>> ExtractElements() {
+    vector<string> ancestors_elems;
+    return root.ExtractElementsSubtree(ancestors_elems);
   }
 };

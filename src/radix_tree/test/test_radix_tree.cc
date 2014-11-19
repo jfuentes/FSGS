@@ -1,5 +1,4 @@
 #include "catch.hpp"
-
 #include "../radix_tree.h"
 
 TEST_CASE( "Radix Tree Node", "[radix_tree_node]" ) {
@@ -23,10 +22,28 @@ TEST_CASE( "Radix Tree", "[radix_tree]") {
 
   cout << "RadixTree" << endl;
   cout << tree.root << endl;
+  cout << "***************************" << bitset<K>(11) << "oeu" << endl;
   tree.InsertElement(bitset<K>(11)); // Insert 00001011
   tree.InsertElement(bitset<K>(110));// Insert 01101110
   tree.InsertElement(bitset<K>(210));// Insert 11010010
   tree.InsertElement(bitset<K>(15)); // Insert 00001111
+
+  SECTION( "Vector Extraction") {
+    vector<bitset<K> > expected;
+    expected.push_back(bitset<K>(10));
+    expected.push_back(bitset<K>(11));
+    expected.push_back(bitset<K>(110));
+    expected.push_back(bitset<K>(210));
+    expected.push_back(bitset<K>(15));
+
+    const auto & generated = tree.ExtractElements();
+
+    REQUIRE(expected.size() == generated.size());
+
+    for( unsigned int i = 0 ; i < expected.size(); ++i) {
+      REQUIRE(expected[i] == generated[i]);
+    }
+  }
 
   cout << tree.root << endl;
   tree.Compact();
@@ -35,7 +52,26 @@ TEST_CASE( "Radix Tree", "[radix_tree]") {
 
   tree.InsertElement(bitset<K>("1010101010101010"));
   cout << tree.root << endl;
+ 
+  tree.InsertElement(bitset<K>("1010101010101010"));
+  cout << tree.root << endl;
 
+  tree.InsertElement(bitset<K>("1100101010101010"));
+  cout << tree.root << endl;
+
+  tree.InsertElement(bitset<K>("1010101010101010"));
+  cout << tree.root << endl;
+
+  tree.Compact();
+  cout << tree.root << endl;
+
+  tree.InsertElement(bitset<K>("0101010101010101"));
+  cout << tree.root << endl;
+ 
+  tree.Compact();
+  cout << tree.root << endl;
+
+/*
   tree.InsertElement(bitset<K>("1010101010000011"));
   cout << tree.root << endl;
 
@@ -44,6 +80,6 @@ TEST_CASE( "Radix Tree", "[radix_tree]") {
   cout << tree.root << endl;
   tree.Compact();
   cout << tree.root << endl;
-  REQUIRE(tree.root.elems.nr_elems() == 4);
+  REQUIRE(tree.root.elems.nr_elems() == 4);*/
 
 }
