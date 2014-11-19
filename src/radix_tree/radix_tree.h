@@ -22,8 +22,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
   BlockRadixTreeNode<StorageType, B, K> * parent;
 
-  BlockRadixTreeNode():BlockRadixTreeNode(nullptr, 0) {
-  };
+  BlockRadixTreeNode():BlockRadixTreeNode(nullptr, 0) {};
 
   BlockRadixTreeNode(BlockRadixTreeNode<StorageType, B, K> * _parent, const k_size_t _offset): 
       parent(_parent), offset(_offset), is_last_node(_offset + B == K){
@@ -69,7 +68,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
       // Subquery does not exists
       auto q_st = q.template AsStorageType<StorageType, B, false>(offset);
       elems.InsertElem(q_st);
-
+      cout << "InsertElement, !subq_exists, q_st: " << bitset<K>(q_st) << endl;
       if(!is_last_node) {
         cout << "New node"<< endl;
         // We have not reached leafs yet
@@ -121,9 +120,11 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     // TODO: Are there more reliable ways to check if it is a leafi
     const bool last_node = children.size() == 0 && tot_elems > 0;
 */
+/*    cout.width(node.offset + B);
+    cout.fill(' ');*/
     for( auto b : node.elems.elem_blocks) {
       for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
-        out << iter_elems << ": \t" << bitset<B>(b) << endl;
+        out << iter_elems << ": \t" << string(node.offset, ' ') << bitset<B>(b) << endl;
         if (node.children.size() > 0)
           out << *(node.children[iter_elems]);
         b >>= B;
@@ -149,13 +150,16 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
     auto q = Query<K>(q_bitset);
     bool q_is_contained = root.template FindElemsInTree<true, FindType::superset > (q, nullptr);
 
-    cout << "contained " << endl;
     if ( ! q_is_contained) {
       cout << "no contained " << endl;
       // Query is contained, find elements that are contained in new query and register them for deletion on next compact
       root.template FindElemsInTree<false, FindType::subset>(q, & idxs_to_delete);
       root.InsertElement(q);
       RequestCompact();
+    } else {
+#ifdef __DEBUG
+    cout << "contained " << endl;
+#endif
     }
   }
   inline void RequestCompact() {

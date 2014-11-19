@@ -33,7 +33,7 @@ template <k_size_t K> struct Query {
   };
 
   friend ostream& operator<< (ostream & out, const  Query & q_obj) {
-    out << "bitset: " << q_obj.q.to_string() << " \tk_offset: " << (unsigned int)q_obj.k_offset << endl;
+    out << "bitset: " << q_obj.q.to_string() << endl;
     return out;
   }
 };
