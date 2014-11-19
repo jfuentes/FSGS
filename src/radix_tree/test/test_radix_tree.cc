@@ -32,4 +32,18 @@ TEST_CASE( "Radix Tree", "[radix_tree]") {
   tree.Compact();
   cout << tree.root << endl;
   REQUIRE(tree.root.elems.nr_elems() == 3);
+
+  tree.InsertElement(bitset<K>("1010101010101010"));
+  cout << tree.root << endl;
+
+  tree.InsertElement(bitset<K>("1010101010000011"));
+  cout << tree.root << endl;
+
+  tree.InsertElement(bitset<K>("1010101010101011"));
+
+  cout << tree.root << endl;
+  tree.Compact();
+  cout << tree.root << endl;
+  REQUIRE(tree.root.elems.nr_elems() == 4);
+
 }
