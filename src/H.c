@@ -55,7 +55,7 @@ void destroyH(H *h){
 	struct node * it;
 	while(h->deletedPositions->next!=NULL){
 			it=h->deletedPositions;
-			h->deletedPositions=h->deletedPositions;
+			h->deletedPositions=h->deletedPositions->next;
 			free(it);
 	}
 	free(h->deletedPositions);

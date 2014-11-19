@@ -47,10 +47,10 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int nu
 				if (!refutation){
 					continue;
         		}
-				//printf("refutation found: [%d][%d] ",i,j);
-				//printbits(refutation, numAttributes);
-				//printf("  %d",refutation);
-				//printf("\n");
+				printf("refutation found: [%d][%d] ",i,j);
+				printbits(refutation, numAttributes);
+				printf("  %d",refutation);
+				printf("\n");
 				
 
 				checkRefutationInH(matrixH, refutation);
@@ -154,10 +154,12 @@ RC checkRefutationInH(H *matrixH, word_t X) {
 					// Xi is subset of X
 					// remove all of Xi which are subset of X
 					removeHi(matrixH, i);
+				}else{
+					j++;
 				}
 
 			}
-			j++;
+			
 
 		}
 		addHi(matrixH, X);
@@ -360,10 +362,10 @@ int main(int argc, char* argv[]) {
 	if (type_algorithm == SEQUENTIAL_ALGORITHM) {
 		for (k = numAttributes - 1; k >= 0; k--) {
 			H * matrixH = createH(numAttributes, k);
-			if((rc = findRefutationsToFile(relation, matrixH, k, numAttributes, numTuples))!=0)
+			if((rc = findRefutations(relation, matrixH, k, numAttributes, numTuples))!=0)
 				return rc;
 			destroyH(matrixH);
-			return 0;
+			//return 0;
 		}
 	} else {
 		for (k = numAttributes - 1; k >= 0; k--) {
