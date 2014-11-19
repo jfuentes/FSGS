@@ -10,6 +10,9 @@ using IdxsNodeContainer = map<NodeType *, IdxsContainer>;
 
 template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNode {
 
+  const k_size_t offset;
+  const bool is_last_node;
+
   BlocksVector<StorageType, B> elems;
 
   // Cleared on every cool to FindType
@@ -19,16 +22,15 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 
   BlockRadixTreeNode<StorageType, B, K> * parent;
 
-  BlockRadixTreeNode():parent(nullptr){};
-  BlockRadixTreeNode(BlockRadixTreeNode<StorageType, B, K> * _parent): parent(_parent) {
+  BlockRadixTreeNode():BlockRadixTreeNode(nullptr, 0) {
+  };
+
+  BlockRadixTreeNode(BlockRadixTreeNode<StorageType, B, K> * _parent, const k_size_t _offset): 
+      parent(_parent), offset(_offset), is_last_node(_offset + B == K){
   };
 
   template <bool stop_first, FindType find_type> bool const FindElemsInTree(
       const Query<K> & q, IdxsNodeContainer<BlockRadixTreeNode<StorageType, B, K> > * matches_container) {
-
-    Query<K> new_q (q);
-    new_q.k_offset += B;
-    const bool is_last_node = new_q.k_offset == K;
 
     aux_elem_idxs.clear();
 
@@ -37,16 +39,16 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
 #endif
 
     auto matches = (is_last_node)? ( (matches_container == nullptr)? nullptr : &( (*matches_container)[this])) : &aux_elem_idxs;
-    const bool found = elems.template FindElems<stop_first, find_type>(q, matches);
+    const bool found = elems.template FindElems<stop_first, find_type>(q, offset,  matches);
 
 #ifdef DEBUG
     cout << "FindElemsInTree, found:" << found << endl;
 #endif
 
     if (found && !is_last_node) {
-      bool any_found = false;
-      for(auto vect_idx : aux_elem_idxs){
-        any_found |= children[vect_idx]->template FindElemsInTree<stop_first, find_type>(new_q, matches_container);
+     bool any_found = false;
+     for(auto vect_idx : aux_elem_idxs) {
+        any_found |= children[vect_idx]->template FindElemsInTree<stop_first, find_type>(q, matches_container);
       }
       return any_found;
     }
@@ -54,30 +56,25 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
   }
 
   void InsertElement(Query<K> & q) {
-    aux_elem_idxs.clear();
-    const bool subq_exists = elems.template FindElems<true, FindType::equal, K>(q, &aux_elem_idxs);
-
-    Query<K> new_q (q);
-    new_q.k_offset += B;
-    const bool is_last_node = new_q.k_offset == K;
+    const bool subq_exists = elems.template FindElems<true, FindType::equal, K>(q, offset, &aux_elem_idxs);
 
     if (subq_exists) {
 #ifdef DEBUG
       cout << "InsertElement, subq_exists, aux_elem_idxs.back():" << aux_elem_idxs.back() << endl;
 #endif
-      if(!is_last_node)
-        children[aux_elem_idxs.back()]->InsertElement(new_q);
+      if(!is_last_node) {
+        children[aux_elem_idxs.back()]->InsertElement(q);
+      }
     } else {
       // Subquery does not exists
-      auto q_st = q.template AsStorageType<StorageType, B, false>();
+      auto q_st = q.template AsStorageType<StorageType, B, false>(offset);
       elems.InsertElem(q_st);
 
       if(!is_last_node) {
-         // We have not reached leafs yet
-
-        // TODO: use smart_ptrs
-        unique_ptr<BlockRadixTreeNode <StorageType, B, K> > new_node(new BlockRadixTreeNode(this));
-        new_node->InsertElement(new_q);
+        cout << "New node"<< endl;
+        // We have not reached leafs yet
+        unique_ptr<BlockRadixTreeNode <StorageType, B, K> > new_node(new BlockRadixTreeNode(this, offset + B));
+        new_node->InsertElement(q);
         children.push_back(move(new_node));
       }
     }
@@ -102,8 +99,11 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     // Remove children as well if it is not a leaf node
     if (children.size() > 0) {
       assert(children.size() >= idxs_elems_to_rm.size());
+
+      // Assuming that indexes are comming sorted in decreasing order from elems.DeleteElems
       auto rit_idx = idxs_elems_to_rm.rbegin();
       while(rit_idx != idxs_elems_to_rm.rend()) {
+        // TODO: This is extremely inneficient, fix
         cout << "Removing children at index: " << *rit_idx << endl;
         children.erase(children.begin() + *rit_idx);
         ++rit_idx;
@@ -124,6 +124,8 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     for( auto b : node.elems.elem_blocks) {
       for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems) {
         out << iter_elems << ": \t" << bitset<B>(b) << endl;
+        if (node.children.size() > 0)
+          out << *(node.children[iter_elems]);
         b >>= B;
       }
     }
@@ -144,7 +146,7 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
   }
 
   void InsertElement(const bitset<K> & q_bitset) {
-    auto q = Query<K>(q_bitset, 0);
+    auto q = Query<K>(q_bitset);
     bool q_is_contained = root.template FindElemsInTree<true, FindType::superset > (q, nullptr);
 
     cout << "contained " << endl;

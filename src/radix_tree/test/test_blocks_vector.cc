@@ -29,20 +29,20 @@ TEST_CASE( "Blocks Vector", "[blocks_vector]" ) {
       REQUIRE(bv.nr_elems() == 0);
     }
     SECTION( "Test queries with one element.") {
-      auto q_2 = Query<K>(2, 0);
+      auto q_2 = Query<K>(2);
 
       // Find subsets of 0010 in {0011}.
-      REQUIRE_FALSE( (bv.FindElems<true, FindType::subset>(q_2, nullptr) ) );
+      REQUIRE_FALSE( (bv.FindElems<true, FindType::subset>(q_2, 0, nullptr) ) );
 
       // Find supersets of 0010 in {0011}.
-      REQUIRE( (bv.FindElems<true, FindType::superset>(q_2, nullptr) ) );
+      REQUIRE( (bv.FindElems<true, FindType::superset>(q_2, 0, nullptr) ) );
 
       // Find exact match of 0010 in {0011}.
-      REQUIRE_FALSE( (bv.FindElems<true, FindType::equal>(q_2, nullptr) ) );
+      REQUIRE_FALSE( (bv.FindElems<true, FindType::equal>(q_2, 0, nullptr) ) );
     
 
-      auto q_7 = Query<K>(7,0);
-      REQUIRE( (bv.FindElems<true, FindType::subset>(q_7, nullptr) ) );
+      auto q_7 = Query<K>(7);
+      REQUIRE( (bv.FindElems<true, FindType::subset>(q_7, 0, nullptr) ) );
     }
     SECTION( "Add another") {
       bv.InsertElem(20); // Insert 10100

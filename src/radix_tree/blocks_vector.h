@@ -72,11 +72,11 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
   }
 
   template <bool stop_first, FindType find_type, k_size_t K> bool const FindElems(
-      const Query<K> & q, IdxsContainer * matches) const {
+      const Query<K> & q, const k_size_t k_offset, IdxsContainer * matches) const {
     // calling stop_first and do not provide matches makes no sense
     assert(stop_first ||  matches != nullptr);
 
-    const StorageType q_st = q.template AsStorageType<StorageType, B, true>();
+    const StorageType q_st = q.template AsStorageType<StorageType, B, true>(k_offset);
 
     size_t idx_cur_elem = 0;
     const auto tot_nr_elems = nr_elems();
