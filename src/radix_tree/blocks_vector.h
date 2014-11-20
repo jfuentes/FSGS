@@ -16,7 +16,7 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
   static const uint_fast8_t block_bitsize = sizeof(StorageType) * 8;
   static const uint_fast8_t nr_elems_per_block = block_bitsize / B;
 
-  static_assert( (nr_elems_per_block & (nr_elems_per_block-1)) == 0, "nr_elems_per_block must be power of 2.");
+  static_assert( (nr_elems_per_block & (nr_elems_per_block - 1)) == 0, "nr_elems_per_block must be power of 2.");
 
   static const StorageType elem_mask = (1 << B) - 1; // Mask with B LSB set
 
@@ -90,7 +90,7 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
 #endif
 
       // Mask with B Least Significant Bits set
-      StorageType mask_q_one = (1 << B) -1;
+      StorageType mask_q_one = elem_mask;
 
       for (uint_fast8_t i = 0; i < nr_elems_per_block && idx_cur_elem < tot_nr_elems; ++i, ++idx_cur_elem) {
         bool found = false;
@@ -119,6 +119,14 @@ template <typename StorageType, k_size_t B> struct BlocksVector {
     return any_found;
   };
 
+  bitset<B> GetElem(size_t idx) {
+    assert(idx < nr_elems());
+
+    const size_t block_idx = idx / nr_elems_per_block;
+    const k_size_t elem_offset = idx & offset_mask;
+    cout << " block_idx: " << (int)block_idx << "\t elem_offset:" << (int)elem_offset << endl;
+    return bitset<B>((elem_blocks[block_idx] >> elem_offset * B) & elem_mask);
+  }
 
   void DeleteElems(IdxsContainer & idxs_elems_to_rm) {
     // TODO: DeleteElems will be much more efficient with a set rather than a vector
