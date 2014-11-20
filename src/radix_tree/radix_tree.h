@@ -69,9 +69,13 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
       // Subquery does not exists
       auto q_st = q.template AsStorageType<StorageType, B, false>(offset);
       elems.InsertElem(q_st);
+#ifdef DEBUG
       cout << "InsertElement, !subq_exists, q_st: " << bitset<K>(q_st) << endl;
+#endif
       if(!is_last_node) {
+#ifdef DEBUG
         cout << "New node"<< endl;
+#endif
         // We have not reached leafs yet
         unique_ptr<BlockRadixTreeNode <StorageType, B, K> > new_node(new BlockRadixTreeNode(this, offset - B));
         new_node->InsertElement(q);
@@ -86,7 +90,9 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     size_t idx = 0;
     for (auto & child : children) {
       if (child->elems.is_empty()) {
+#ifdef DEBUG
         cout << "RemoveEmptyChildren: " << *child << " \t idx: " << idx << endl;
+#endif
         aux_elem_idxs.push_back(idx++);
       }
     }
@@ -104,12 +110,25 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
       auto rit_idx = idxs_elems_to_rm.rbegin();
       while(rit_idx != idxs_elems_to_rm.rend()) {
         // TODO: This is extremely inneficient, fix
+#ifdef DEBUG
         cout << "Removing children at index: " << *rit_idx << endl;
+#endif
         children.erase(children.begin() + *rit_idx);
         ++rit_idx;
       }
     }
     // TODO: Eliminate empty parents
+  }
+
+  size_t CountElems() const {
+    size_t nr_elems = 0;
+    if (is_last_node) 
+      return elems.nr_elems();
+  
+    for(const auto & child : children) {
+      nr_elems += child->CountElems();
+    }
+    return nr_elems;
   }
 
   vector<bitset<K>> ExtractElementsSubtree(vector<string> & ancestors_elems) {
@@ -123,11 +142,11 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
         ancestors_elems.push_back(bitset<B>(b).to_string());
         if (is_last_node) {
           ret.push_back(bitset<K>(accumulate(ancestors_elems.begin(), ancestors_elems.end(), string(""))));
-          ancestors_elems.pop_back();
         } else {
           auto ret_child = children[iter_elems]->ExtractElementsSubtree(ancestors_elems);
           ret.insert( ret.end(), ret_child.begin(), ret_child.end());
         }
+        ancestors_elems.pop_back();
       }
     }
     return ret;
@@ -155,9 +174,8 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
   }
 };
 
-template <typename StorageType, k_size_t K> struct BlockRadixTree {
+template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTree {
 
-  static const k_size_t B = K/2;
   BlockRadixTreeNode<StorageType, B, K> root;
   IdxsNodeContainer<BlockRadixTreeNode<StorageType, B, K> > idxs_to_delete;
 
@@ -172,13 +190,15 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
     bool q_is_contained = root.template FindElemsInTree<true, FindType::superset > (q, nullptr);
 
     if ( ! q_is_contained) {
+#ifdef DEBUG
       cout << "no contained " << endl;
+#endif
       // Query is contained, find elements that are contained in new query and register them for deletion on next compact
       root.template FindElemsInTree<false, FindType::subset>(q, & idxs_to_delete);
       root.InsertElement(q);
       RequestCompact();
     } else {
-#ifdef __DEBUG
+#ifdef DEBUG
     cout << "contained " << endl;
 #endif
     }
@@ -232,8 +252,11 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
     }
   }
 
-  vector<bitset<K>> ExtractElements() {
+  vector<bitset<K>> ExtractElements(bool sorted = true) {
     vector<string> ancestors_elems;
-    return root.ExtractElementsSubtree(ancestors_elems);
+    auto elems = root.ExtractElementsSubtree(ancestors_elems);
+    if (sorted)
+      sort(elems.begin(), elems.end(), compare_bitsets<K>);
+    return elems;
   }
 };

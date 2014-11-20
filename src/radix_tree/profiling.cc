@@ -45,16 +45,22 @@ int main (void) {
   cout << "Loading: " << timer.elapsed() <<endl;
 
   const k_size_t K = 16;
-  auto tree = BlockRadixTree<storage_t, K>();
+  const k_size_t B = 16;
+  auto tree = BlockRadixTree<storage_t, B, K>(100000000);
 
   cout << "Start insertion" << endl;
   timer.restart();
+
+  size_t i = 0;
   for(const auto e : vec) {
     tree.InsertElement(bitset<K>(e));
+    i ++;
   }
-  tree.Compact();
+  cout << "Nr Insertions:" << i << endl;
+//  tree.Compact();
   cout << "Inserting: " << timer.elapsed() << endl;
-  cout << "Finished. Rows: " << tree.root.elems.nr_elems() << endl;
+  cout << "Finished. Rows: " << tree.root.CountElems() << endl;
+  cout << tree.root << endl;
 //  cout << tree.root << endl;
 }
 

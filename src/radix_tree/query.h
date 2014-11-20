@@ -48,3 +48,8 @@ template <k_size_t K> struct Query {
     return out;
   }
 };
+
+template <k_size_t K> bool compare_bitsets( const bitset<K> a, const bitset<K> b) {
+  return a.to_string() < b.to_string();
+}
+
