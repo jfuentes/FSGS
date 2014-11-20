@@ -45,8 +45,8 @@ int main (void) {
   cout << "Loading: " << timer.elapsed() <<endl;
 
   const k_size_t K = 16;
-  const k_size_t B = 16;
-  auto tree = BlockRadixTree<storage_t, B, K>(100000000);
+  const k_size_t B = 8;
+  auto tree = BlockRadixTree<storage_t, B, K>(10000);
 
   cout << "Start insertion" << endl;
   timer.restart();
@@ -60,7 +60,6 @@ int main (void) {
 //  tree.Compact();
   cout << "Inserting: " << timer.elapsed() << endl;
   cout << "Finished. Rows: " << tree.root.CountElems() << endl;
-  cout << tree.root << endl;
 //  cout << tree.root << endl;
 }
 

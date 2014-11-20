@@ -131,7 +131,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     return nr_elems;
   }
 
-  vector<bitset<K>> ExtractElementsSubtree(vector<string> & ancestors_elems) {
+  vector<bitset<K>> ExtractElementsSubtree(vector<string> & ancestors_elems) const {
     size_t iter_elems = 0;
     auto tot_elems = elems.nr_elems();
 
@@ -165,7 +165,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTreeNod
     cout.fill(' ');*/
     for( auto b : node.elems.elem_blocks) {
       for(uint_fast8_t i = 0; i < node.elems.nr_elems_per_block && iter_elems < tot_elems; ++i, ++iter_elems, b >>= B) {
-        out << iter_elems << ":" <<setw(18) << &node << "\t" << string(K - B - node.offset, ' ') << bitset<B>(b) << endl;
+        out << setw(3) << iter_elems << ":" <<setw(18) << &node << "\t" << string(K - B - node.offset, ' ') << bitset<B>(b) << endl;
         if (!node.is_last_node)
           out << *(node.children[iter_elems]);
       }
@@ -182,12 +182,12 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTree {
 
   size_t compact_treshold;
 
-  BlockRadixTree(size_t _compact_treshold = 1000): compact_treshold(_compact_treshold){
+  BlockRadixTree(size_t _compact_treshold = 1000): compact_treshold(_compact_treshold) {
   }
 
   void InsertElement(const bitset<K> & q_bitset) {
     auto q = Query<K>(q_bitset);
-    bool q_is_contained = root.template FindElemsInTree<true, FindType::superset > (q, nullptr);
+    const bool q_is_contained = root.template FindElemsInTree<true, FindType::superset > (q, nullptr);
 
     if ( ! q_is_contained) {
 #ifdef DEBUG
@@ -252,7 +252,7 @@ template <typename StorageType, k_size_t B, k_size_t K> struct BlockRadixTree {
     }
   }
 
-  vector<bitset<K>> ExtractElements(bool sorted = true) {
+  vector<bitset<K> > ExtractElements(bool sorted = true) const{
     vector<string> ancestors_elems;
     auto elems = root.ExtractElementsSubtree(ancestors_elems);
     if (sorted)

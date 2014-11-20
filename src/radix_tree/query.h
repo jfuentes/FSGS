@@ -33,7 +33,7 @@ template <k_size_t K> struct Query {
     if (fill_storage_type) {
       // TODO: This can be optimized further by removing the counter i and having a while loop that breaks when aux reaches 
       // a value that is close to some function of K and B
-      const auto nr_iters = K/B;
+      const auto nr_iters = (sizeof(StorageType)*8)/B;
       StorageType aux = q_st;
       for(uint_fast8_t i = 0; i < nr_iters; ++i, aux <<= B) {
         q_st |= aux;
