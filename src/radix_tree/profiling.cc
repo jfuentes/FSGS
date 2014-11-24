@@ -36,6 +36,7 @@ int main (void) {
 //  string filename = "../test_cases/23751refSet9_253x10";
 //  string filename = "../test_cases/16171584refSet14_6436x15";
   string filename = "../test_cases/62110620refSet15_12871x16";
+//  string filename = "../test_cases/886451995refSet17_48621x18";
 
   boost::timer timer;
 
@@ -56,11 +57,13 @@ int main (void) {
     tree.InsertElement(bitset<K>(e));
     i ++;
   }
+
+  tree.Compact();
+
+  cout << tree.root << endl;
   cout << "Nr Insertions:" << i << endl;
-//  tree.Compact();
   cout << "Inserting: " << timer.elapsed() << endl;
   cout << "Finished. Rows: " << tree.root.CountElems() << endl;
-//  cout << tree.root << endl;
 }
 
 
