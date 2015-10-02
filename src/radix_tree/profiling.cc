@@ -57,5 +57,3 @@ int main (void) {
   cout << "Finished. Rows: " << tree.root.elems.nr_elems() << endl;
 //  cout << tree.root << endl;
 }
-
-

@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "hash_buckets.h"
+#include "iostream"
 
 typedef uint32_t word_t;
 
@@ -45,17 +46,18 @@ template <typename KeyType> struct IndexAttribute {
    void getRefutations(std::vector<word_t> & refs){
       refs.clear();
 
-      //get the iterator from map and competare every attribute with the rest
-
+      //get the iterator from map and compare every attribute with the rest
+      word_t mask = 1;
       for (auto it=values_map.begin(); it!=values_map.end(); ++it){
          for(auto it2=std::next(it); it2!=values_map.end(); ++it2){
             word_t refutation = 0;
-            word_t mask = 1;
+
             for (int X = numAttributes - 1; X >= 0; X--) {
                if(it->second.intersectionBool(X, it2->second.getBucket(X))) {
                   mask = 1;
                   mask<<=X;
                   refutation|=mask;
+                  std::cout << "attttt " << X << std::endl;
                }
             }
             // if a valid refutation was found, add it
