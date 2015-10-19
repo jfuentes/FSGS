@@ -8,7 +8,7 @@
 #include <mutex>
 
 using namespace std;
-#define NUMBER_THREADS 3
+#define NUMBER_THREADS 8
 
 typedef uint32_t word_t;
 typedef uint32_t file_storage_t;
@@ -82,18 +82,19 @@ void findRefutationsThread(struct info * pars) {
    				if (!refutation){
    					continue;
            		}
-   				printf("\nrefutation found: [%d][%d]  ",current_tuple,j);
-   				printbits(refutation, numAttributes);
+   				//printf("\nrefutation found: [%d][%d]  ",current_tuple,j);
+   				//printbits(refutation, numAttributes);
    				//printf("  %d",refutation);
    				//printf("\n");
 
 
    				//check the refutation on radix tree
-               mtx.lock();
-               //printf("\ninserting  %d",refutation);
-               tree.InsertElement(bitset<K>(refutation));
-               mtx.unlock();
-
+               if(!tree.containsSuperset(bitset<K>(refutation))){
+                  mtx.lock();
+                  //printf("\ninserting  %d",refutation);
+                  tree.InsertElement(bitset<K>(refutation));
+                  mtx.unlock();
+               }
    		}
       }
       //tree.Compact(0);
@@ -157,54 +158,51 @@ void printbits(word_t x, unsigned int length) {
      } while( i < length);
 }
 
+
+
 int main (int argc, char* argv[]) {
 
-  boost::timer timer;
+   boost::timer timer;
+   char delimiter[] = ",\n"; //IMPORTANT: set the delimiter from the dataset file
+   int rc;
+
+   if (argc != 4) {
+      printf(
+            "Error, you must use $./main numAttributes numTuples datasetName");
+      return -1;
+   }
+
+   numAttributes = atoi(argv[1]);
+   numTuples = atoi(argv[2]);
+   char *nameRelation = argv[3];
+
+
+   printf("Dataset: %s", nameRelation);
+   printf(" size=%dx%d\n", numTuples, numAttributes);
+
+   //request enough space for the dataset
+   relation = (int **) malloc(sizeof(int*) * numTuples);
+   unsigned int i;
+   for (i = 0; i < numTuples; i++) {
+      relation[i] = (int *) malloc(sizeof(int) * numAttributes);
+   }
+
+   rc = readDataSet(nameRelation, delimiter);
+
+   if (rc < 0) {
+      printf("Error loading the dataset: %d", rc);
+      return -1;
+   }
 
 
 
-
-
-
-
-char delimiter[] = ",\n"; //IMPORTANT: set the delimiter from the dataset file
-int rc;
-
-if (argc != 4) {
-   printf(
-         "Error, you must use $./main numAttributes numTuples datasetName");
-   return -1;
-}
-
-numAttributes = atoi(argv[1]);
-numTuples = atoi(argv[2]);
-char *nameRelation = argv[3];
-
-
-printf("Dataset: %s", nameRelation);
-printf(" size=%dx%d\n", numTuples, numAttributes);
-
-//request enough space for the dataset
-relation = (int **) malloc(sizeof(int*) * numTuples);
-unsigned int i;
-for (i = 0; i < numTuples; i++) {
-   relation[i] = (int *) malloc(sizeof(int) * numAttributes);
-}
-
-rc = readDataSet(nameRelation, delimiter);
-
-if (rc < 0) {
-   printf("Error loading the dataset: %d", rc);
-   return -1;
-}
-
-
-
-  for (int k = numAttributes - 1; k >= 0; k--) {
+   for (int k = numAttributes - 1; k >= 0; k--) {
       tree = BlockRadixTree<file_storage_t, K>();
-     findRefutations(k);
+      findRefutations(k);
       tree.Compact(0);
-     cout << "Finished. Rows: " << tree.root.elems.nr_elems() << endl;
-     break;
-  }
+      cout << "\nFinished. Rows: " << tree.root.elems.nr_elems() << endl;
+      break;
+   }
+
+   cout << "Time: " << timer.elapsed() << endl;
 }

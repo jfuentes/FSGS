@@ -59,6 +59,12 @@ template <typename StorageType, k_size_t K> struct BlockRadixTree {
     root.InsertElement(q, idx_subsets);
     Compact();
   }
+
+  bool containsSuperset(const bitset<K> & q_bitset) {
+    auto q = Query<K>(q_bitset, 0);
+    return root.containsSuperset(q);
+  }
+
   inline void Compact() { Compact(compact_treshold);}
 
   inline void Compact(size_t cur_compact_treshold) {

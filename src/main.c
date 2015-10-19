@@ -5,7 +5,6 @@
 #include <assert.h>
 #include "H.h"
 
-
 /**
  * Typical errors:
  * -10 File not found
@@ -16,6 +15,7 @@
  * methods
  **/
 
+int contRef;
 
 RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int numTuples);
 int findRefutationsCont(int ** relation, H *matrixH, int Y, int numAttributes,	int numTuples);
@@ -28,7 +28,6 @@ RC findRefutationsToFile(int ** relation, H *matrixH, int Y, int numAttributes,	
  * sequential method to find refutations for one determined attribute
  **/
 RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int numTuples) {
-
 	int i, j, X;
 	//cuadratic search of refutations
 	for (i = 0; i < numTuples; i++) {
@@ -48,10 +47,10 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int nu
 				if (!refutation){
 					continue;
         		}
-				printf("refutation found: [%d][%d] ",i,j);
-				printbits(refutation, numAttributes);
-				printf("  %d",refutation);
-				printf("\n");
+				//printf("refutation found: [%d][%d] ",i,j);
+				//printbits(refutation, numAttributes);
+				//printf("  %d",refutation);
+				//printf("\n");
 
 
 				checkRefutationInH(matrixH, refutation);
@@ -63,7 +62,7 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int nu
 	}
 
 	//show H
-	printH(matrixH);
+	//printH(matrixH);
 
 	return 0;
 }
@@ -71,7 +70,8 @@ RC findRefutations(int ** relation, H *matrixH, int Y, int numAttributes,	int nu
 
 RC findRefutationsCont(int ** relation, H *matrixH, int Y, int numAttributes,	int numTuples) {
 
-	int i, j, X, contRef=0;
+	int i, j, X;
+	contRef=0;
 	//cuadratic search of refutations
 	for (i = 0; i < numTuples; i++) {
 		for (j = i + 1; j < numTuples; j++) {
@@ -173,8 +173,9 @@ RC checkRefutationInH(H *matrixH, word_t X) {
 	unsigned int i, j=0;
 
 	if (matrixH->numRefutations == 0){ // there is no refutations to compare with, add it
-		if((rc=addHi(matrixH, X))!=0)
+		if((rc=addHi(matrixH, X))!=0){
 			return rc;
+		}
 	}else {
 		word_t t, result;
 		for (i = 0; i < matrixH->size && j<matrixH->numRefutations; i++) {
@@ -400,14 +401,15 @@ int main(int argc, char* argv[]) {
 	}
 
 	//printRelation(relation, numAttributes, numTuples);
+	time_t start = time(NULL);
 
 	//for each attribute, fin its refutations and build H
 	int k = 0, contRef=0;
 	if (type_algorithm == SEQUENTIAL_ALGORITHM) {
 		for (k = numAttributes - 1; k >= 0; k--) {
 			H * matrixH = createH(numAttributes, k);
-			contRef+=findRefutationsCont(relation, matrixH, k, numAttributes, numTuples);
-
+			findRefutations(relation, matrixH, k, numAttributes, numTuples);
+			contRef+=matrixH->numRefutations;
 			destroyH(matrixH);
 			break;
 			//return 0;
@@ -418,6 +420,7 @@ int main(int argc, char* argv[]) {
 			rc = findRefutationsMulti(relation, matrixH, k, numAttributes,numTuples);
 		}
 	}
-	printf("Total refutations found %d", contRef);
+	printf("\nTotal refutations found %d", contRef);
+	printf("\n%.5f\n", (double)(time(NULL) - start));
 	return rc;
 }
