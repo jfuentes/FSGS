@@ -1,4 +1,5 @@
-# Problem Statement
+# Algorithm to find functional dependencies through refutations and hypergraphs
+## Problem Statement
 Let R be a relation with a set A of attributes and let r be an instance of R. 
 A functional dependency (FD) is an expression of the form X->Y, where
 X is subset of A and Y is \in A. The dependency is valid in the instance r if and
