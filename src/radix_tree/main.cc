@@ -3,10 +3,11 @@
 #include <iostream>
 #include <fstream>
 //#include <boost/timer.hpp>
-#include <ctime>
 #include <stdio.h>
 #include <thread>
 #include <mutex>
+#include <string.h>
+#include <sys/time.h>
 
 using namespace std;
 #define NUMBER_THREADS 16
@@ -246,7 +247,8 @@ void printbits(word_t x, unsigned int length) {
 int main (int argc, char* argv[]) {
 
    //boost::timer timer;
-   clock_t begin = clock();
+   struct timespec start, finish;
+   double elapsed;
 
    char delimiter[] = ",\n"; //IMPORTANT: set the delimiter from the dataset file
    int rc, typeAlgorithm=0;
@@ -285,7 +287,7 @@ int main (int argc, char* argv[]) {
       tree[k] = BlockRadixTree<file_storage_t, K>();
    }
 
-
+  clock_gettime(CLOCK_MONOTONIC, &start);
 
    if(typeAlgorithm==0){
       for (int k = numAttributes - 1; k >= 0; k--) {
@@ -313,8 +315,9 @@ int main (int argc, char* argv[]) {
       for (auto& th : threads) th.join();
    }
 }
-   clock_t end = clock();
-   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-   cout << "Time: " << elapsed_secs << endl;
+   clock_gettime(CLOCK_MONOTONIC, &finish);
+   elapsed = finish.tv_sec - start.tv_sec;
+   elapsed += (finish.tv_nsec - start.tv_nsec)/1000000000.0;
+   cout << "Time: " << elapsed << endl;
    //cout << "Time: " << timer.elapsed() << endl;
 }
