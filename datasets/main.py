@@ -5,7 +5,7 @@ def kbits(n, k):
     result = []
     counters = []
     counters = [1]*n
-    
+
     aux = [1] * n
     result.append(','.join("{0}".format(x) for x in aux))
     for bits in itertools.combinations(range(n), k):
@@ -21,7 +21,9 @@ def kbits(n, k):
 
 result = kbits(int(sys.argv[1]), int(int(sys.argv[1])/2))
 fo = open(sys.argv[2], "w+")
-for i in range(len(result)):  
-    fo.write(result[i]+"\n") 
-    print result[i]
+for i in range(len(result)):
+#for i in range(0, 100000):
+    fo.write(result[i]+"\n")
+    #print result[i]
 fo.close()
+print len(result)

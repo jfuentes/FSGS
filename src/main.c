@@ -410,8 +410,9 @@ int main(int argc, char* argv[]) {
 			H * matrixH = createH(numAttributes, k);
 			findRefutations(relation, matrixH, k, numAttributes, numTuples);
 			contRef+=matrixH->numRefutations;
+			//printH(matrixH);
 			destroyH(matrixH);
-			break;
+			//break;
 			//return 0;
 		}
 	} else {

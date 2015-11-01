@@ -2,13 +2,14 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <boost/timer.hpp>
+//#include <boost/timer.hpp>
+#include <ctime>
 #include <stdio.h>
 #include <thread>
 #include <mutex>
 
 using namespace std;
-#define NUMBER_THREADS 8
+#define NUMBER_THREADS 16
 
 typedef uint32_t word_t;
 typedef uint32_t file_storage_t;
@@ -33,12 +34,94 @@ int numAttributes;
 int numTuples;
 //current pivot tuple
 int current_tuple=0;
-vector<thread> threads;
+
 mutex mtx;           // mutex for critical section
-BlockRadixTree<file_storage_t, K> tree;
+BlockRadixTree<file_storage_t, K> *tree;
 
 void findRefutations(int Y) {
 
+   int j, from=0, to=numTuples, X;
+	//cuadratic search of refutations
+	for (j = from; j < to; j++) {
+      if(current_tuple!=j){
+         if (relation[current_tuple][Y] != relation[j][Y]) {
+   				//new refutation found
+   				word_t refutation = 0;
+   				word_t mask = 1;
+   				for (X = numAttributes - 1; X >= 0; X--) {
+   					if (Y!=X &&relation[current_tuple][X] == relation[j][X]) {
+   						mask = 1;
+   						mask<<=X;
+   						refutation|=mask;
+   					}
+   				}
+   				if (!refutation){
+   					continue;
+           		}
+   				//printf("\nrefutation found: [%d][%d]  ",current_tuple,j);
+   				//printbits(refutation, numAttributes);
+   				//printf("  %d",refutation);
+   				//printf("\n");
+
+
+   				//check the refutation on radix tree
+               if(!tree[Y].containsSuperset(bitset<K>(refutation))){
+                  //mtx.lock();
+                  //printf("\ninserting  %d",refutation);
+                  tree[Y].InsertElement(bitset<K>(refutation));
+                  //mtx.unlock();
+               }
+   		}
+      }
+      //tree.Compact(0);
+   }
+
+}
+
+void findRefutationsMultiAttribute(int *Y) {
+   int j, from=0, to=numTuples, X;
+	//cuadratic search of refutations
+	for (j = from; j < to; j++) {
+      if(current_tuple!=j){
+         if (relation[current_tuple][*Y] != relation[j][*Y]) {
+   				//new refutation found
+   				word_t refutation = 0;
+   				word_t mask = 1;
+   				for (X = numAttributes - 1; X >= 0; X--) {
+   					if (*Y!=X &&relation[current_tuple][X] == relation[j][X]) {
+   						mask = 1;
+   						mask<<=X;
+   						refutation|=mask;
+   					}
+   				}
+   				if (!refutation){
+   					continue;
+           		}
+   				//printf("\nrefutation found: [%d][%d]  ",current_tuple,j);
+   				//printbits(refutation, numAttributes);
+   				//printf("  %d",refutation);
+   				//printf("\n");
+
+
+   				//check the refutation on radix tree
+               if(!tree[*Y].containsSuperset(bitset<K>(refutation))){
+                  //mtx.lock();
+                  //printf("\ninserting  %d",refutation);
+                  tree[*Y].InsertElement(bitset<K>(refutation));
+                  //mtx.unlock();
+               }
+   		}
+      }
+      //tree.Compact(0);
+   }
+
+   tree[*Y].Compact(0);
+   cout << "\nFinished. Rows: " << tree[*Y].root.elems.nr_elems() << endl;
+
+}
+
+void findRefutationsMulti(int Y) {
+   vector<thread> threads;
    int split= numTuples/NUMBER_THREADS;
 	int i;
    int cont=0;
@@ -89,10 +172,10 @@ void findRefutationsThread(struct info * pars) {
 
 
    				//check the refutation on radix tree
-               if(!tree.containsSuperset(bitset<K>(refutation))){
+               if(!tree[Y].containsSuperset(bitset<K>(refutation))){
                   mtx.lock();
                   //printf("\ninserting  %d",refutation);
-                  tree.InsertElement(bitset<K>(refutation));
+                  tree[Y].InsertElement(bitset<K>(refutation));
                   mtx.unlock();
                }
    		}
@@ -162,19 +245,22 @@ void printbits(word_t x, unsigned int length) {
 
 int main (int argc, char* argv[]) {
 
-   boost::timer timer;
-   char delimiter[] = ",\n"; //IMPORTANT: set the delimiter from the dataset file
-   int rc;
+   //boost::timer timer;
+   clock_t begin = clock();
 
-   if (argc != 4) {
+   char delimiter[] = ",\n"; //IMPORTANT: set the delimiter from the dataset file
+   int rc, typeAlgorithm=0;
+
+   if (argc != 5) {
       printf(
-            "Error, you must use $./main numAttributes numTuples datasetName");
+            "Error, you must use $./main numAttributes numTuples typeAlgorithm{seq=0,parall=1} datasetName");
       return -1;
    }
 
    numAttributes = atoi(argv[1]);
    numTuples = atoi(argv[2]);
-   char *nameRelation = argv[3];
+   typeAlgorithm = atoi(argv[3]);
+   char *nameRelation = argv[4];
 
 
    printf("Dataset: %s", nameRelation);
@@ -194,15 +280,41 @@ int main (int argc, char* argv[]) {
       return -1;
    }
 
-
-
+   tree = (BlockRadixTree<file_storage_t, K> *) malloc(sizeof(BlockRadixTree<file_storage_t, K>)*numAttributes);
    for (int k = numAttributes - 1; k >= 0; k--) {
-      tree = BlockRadixTree<file_storage_t, K>();
-      findRefutations(k);
-      tree.Compact(0);
-      cout << "\nFinished. Rows: " << tree.root.elems.nr_elems() << endl;
-      break;
+      tree[k] = BlockRadixTree<file_storage_t, K>();
    }
 
-   cout << "Time: " << timer.elapsed() << endl;
+
+
+   if(typeAlgorithm==0){
+      for (int k = numAttributes - 1; k >= 0; k--) {
+
+         findRefutations(k);
+         tree[k].Compact(0);
+         cout << "\nFinished. Rows: " << tree[k].root.elems.nr_elems() << endl;
+
+      }
+   }else{
+      if(typeAlgorithm==1){
+         for (int k = numAttributes - 1; k >= 0; k--) {
+            findRefutationsMulti(k);
+            tree[k].Compact(0);
+            cout << "\nFinished. Rows: " << tree[k].root.elems.nr_elems() << endl;
+
+         }
+      }else{
+      vector<thread> threads;
+      for (int k = numAttributes - 1; k >= 0; k--) {
+         int * a = (int *) malloc(sizeof(int));
+         *a=k;
+         threads.push_back(thread(findRefutationsMultiAttribute, a));  //launch the thread;
+      }
+      for (auto& th : threads) th.join();
+   }
+}
+   clock_t end = clock();
+   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+   cout << "Time: " << elapsed_secs << endl;
+   //cout << "Time: " << timer.elapsed() << endl;
 }
