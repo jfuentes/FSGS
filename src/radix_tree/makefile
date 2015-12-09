@@ -11,4 +11,4 @@ prof: query.h blocks_vector.h radix_tree.h profiling.cc
 	$(CC) $(CFLAGS) profiling.cc -o bin/profiling -L/usr/lib/x86_64-linux-gnu -lboost_timer -lboost_filesystem -O3
 
 main: query.h blocks_vector.h radix_tree.h main.cc
-	$(CC) $(CFLAGS) main.cc -o bin/main -L/usr/lib/x86_64-linux-gnu -lboost_timer -lboost_filesystem -O3
+		$(CC) $(CFLAGS) main.cc -o bin/main -L/usr/lib/x86_64-linux-gnu -O3 -pthread
